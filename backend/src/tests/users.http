@@ -7,6 +7,15 @@ Content-Type: application/json
   "password": "supersecretpassword"
 }
 
+### Create a new user with a hashed password
+POST http://localhost:5000/api/users
+Content-Type: application/json
+
+{
+  "email": "testuser3@example.com",
+  "password": "password123"
+}
+
 ###
 
 ### Fetch all users
