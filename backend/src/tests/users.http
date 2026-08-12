@@ -1,0 +1,18 @@
+### Create a new user
+POST http://localhost:5000/api/users
+Content-Type: application/json
+
+{
+  "email": "testuser2@example.com",
+  "password": "supersecretpassword"
+}
+
+###
+
+### Fetch all users
+GET http://localhost:5000/api/users
+
+###
+
+### Fetch a specific user by ID
+GET http://localhost:5000/api/users/1
