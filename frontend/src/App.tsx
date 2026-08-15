@@ -1,10 +1,10 @@
 import { AuthLayout } from "./layouts";
-import RegisterForm from "./components/RegisterForm";
+import { AuthForm } from "./components/AuthForm";
 
 export default function App() {
   return (
     <AuthLayout>
-      <RegisterForm />
+      <AuthForm />
     </AuthLayout>
   );
 }
