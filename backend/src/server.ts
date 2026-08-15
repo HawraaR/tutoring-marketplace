@@ -1,5 +1,6 @@
 import express from "express";
-import userRoutes from "./routes/UserRoutes";
+import userRoutes from "./routes/userRoutes";
+import authRoutes from "./routes/authRoutes";
 import cors from "cors";
 
 const app = express();
@@ -7,8 +8,9 @@ const app = express();
 app.use(cors({ origin: "http://localhost:5173" })); // Allows Vite frontend
 app.use(express.json());
 
-// Attach user routes under /api/users
+// Attach routes under /api
 app.use("/api/users", userRoutes);
+app.use("/api/auth", authRoutes);
 
 const PORT = process.env.PORT || 5000;
 

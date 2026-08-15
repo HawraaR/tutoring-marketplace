@@ -1,0 +1,43 @@
+### Variable Definitions
+@baseUrl = http://localhost:5000/api/auth
+
+###
+# 1. REGISTER - Success Case
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+  "email": "hawraa@example.com",
+  "password": "hawraa123"
+}
+
+###
+# 2. REGISTER - Zod Validation Failure Test
+# (Short password & invalid email format)
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+  "email": "invalid-email",
+  "password": "123"
+}
+
+###
+# 3. LOGIN - Success Case
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "hawraa@example.com",
+  "password": "hawraa123"
+}
+
+###
+# 4. LOGIN - Invalid Credentials Test
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "hawraa@example.com",
+  "password": "wrongpassword"
+}

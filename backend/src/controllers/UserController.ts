@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { prisma } from "../db";
+import { prisma } from "../../prisma/db";
 import bcrypt from "bcryptjs";
 
 //create a new user
