@@ -1,8 +1,10 @@
 import express from "express";
 import userRoutes from "./routes/UserRoutes";
+import cors from "cors";
 
 const app = express();
 
+app.use(cors({ origin: "http://localhost:5173" })); // Allows Vite frontend
 app.use(express.json());
 
 // Attach user routes under /api/users
