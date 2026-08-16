@@ -20,3 +20,11 @@ export interface ApiErrorResponse {
   error?: string;
   details?: Array<{ field: string; message: string }>;
 }
+
+export interface AuthContextType {
+  user: User | null;
+  token: string | null;
+  isLoading: boolean;
+  login: (token: string, user: User) => void;
+  logout: () => void;
+}

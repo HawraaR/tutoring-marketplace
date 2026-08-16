@@ -70,3 +70,35 @@ export const login = async (
     return res.status(500).json({ error: "Internal server error." });
   }
 };
+
+export const getMe = async (req: Request, res: Response) => {
+  try {
+    // Extract userId attached by your auth middleware
+    const userId = (req as any).user?.id || (req as any).user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Fetch user from DB
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        createdAt: true,
+        updatedAt: true,
+        // password is intentionally EXCLUDED
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    return res.status(200).json({ user });
+  } catch (error) {
+    console.error("Error in getMe:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};

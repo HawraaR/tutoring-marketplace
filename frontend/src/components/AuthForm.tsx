@@ -5,8 +5,12 @@ import type { ApiErrorResponse } from "../types";
 
 // Import your custom reusable components
 import { Input, Button } from "./ui";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export const AuthForm: React.FC = () => {
+  const navigate = useNavigate();
+  const { login } = useAuth();
   // Toggle between Login (false) and Register (true)
   const [isRegister, setIsRegister] = useState<boolean>(false);
 
@@ -18,7 +22,7 @@ export const AuthForm: React.FC = () => {
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
   const [successMessage, setSuccessMessage] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessages([]);
@@ -28,35 +32,49 @@ export const AuthForm: React.FC = () => {
     const payload = { email, password };
 
     try {
-      const response = isRegister
-        ? await registerUser(payload)
-        : await loginUser(payload);
+      if (isRegister) {
+        // Step 1: Create the account in backend
+        await registerUser(payload);
 
-      setSuccessMessage(response.message || "Operation successful!");
+        // Step 2: Auto-login with the exact same credentials!
+        const loginResponse = await loginUser(payload);
 
-      // Store JWT token if returned on login
-      if (response.token) {
-        localStorage.setItem("token", response.token);
+        if (loginResponse.token && loginResponse.user) {
+          login(loginResponse.token, loginResponse.user);
+          setEmail("");
+          setPassword("");
+          navigate("/dashboard");
+        } else {
+          setErrorMessages([
+            "Registered successfully, but auto-login failed. Please sign in.",
+          ]);
+        }
+      } else {
+        // Standard Login Flow
+        const response = await loginUser(payload);
+
+        if (response.token && response.user) {
+          login(response.token, response.user);
+          setEmail("");
+          setPassword("");
+          navigate("/dashboard");
+        } else {
+          setErrorMessages(["Login failed. No token received."]);
+        }
       }
-
-      // Reset form fields on success
-      setEmail("");
-      setPassword("");
     } catch (err: unknown) {
       if (axios.isAxiosError<ApiErrorResponse>(err) && err.response) {
         const errorData = err.response.data;
 
         if (errorData.details && Array.isArray(errorData.details)) {
-          // Zod validation messages array
           setErrorMessages(errorData.details.map((item) => item.message));
         } else if (errorData.error) {
-          // Single error message
           setErrorMessages([errorData.error]);
         } else {
           setErrorMessages(["An unexpected server error occurred."]);
         }
       } else {
-        setErrorMessages(["Network error. Is your backend running on port 5000?"]);
+        setErrorMessages(["Network error. Is your backend server running?"]);
       }
     } finally {
       setIsLoading(false);
@@ -72,7 +90,6 @@ export const AuthForm: React.FC = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
       <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg">
-        
         {/* Navigation Tabs */}
         <div className="mb-6 flex border-b border-gray-200">
           <button
@@ -143,11 +160,7 @@ export const AuthForm: React.FC = () => {
           />
 
           <Button type="submit" disabled={isLoading} className="w-full">
-            {isLoading
-              ? "Processing..."
-              : isRegister
-              ? "Sign Up"
-              : "Sign In"}
+            {isLoading ? "Processing..." : isRegister ? "Sign Up" : "Sign In"}
           </Button>
         </form>
       </div>
