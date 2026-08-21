@@ -55,3 +55,33 @@ body {
   color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
 }
+
+.chat-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.chat-scrollbar:hover {
+  scrollbar-color: var(--color-border-subtle) transparent;
+}
+
+.chat-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: transparent;
+}
+
+.chat-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: var(--color-border-subtle);
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
+}
