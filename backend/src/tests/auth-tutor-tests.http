@@ -1,0 +1,62 @@
+### Variables
+@baseUrl = http://localhost:5000/api
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NDRlZmMxYy0yYzRjLTQ2OGUtODc2NC1iOWE2ZDAzYzk1N2UiLCJlbWFpbCI6InR1dG9yQGV4YW1wbGUuY29tIiwiaWF0IjoxNzg3MzEzNjM1LCJleHAiOjE3ODc5MTg0MzV9.NLbi9CyC03iQv498MmkRdimZst2QBIKVzV2F3Q0fdcc
+
+
+# @name register
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "tutor@example.com",
+  "password": "tutor123",
+  "firstName": "Tutor",
+  "lastName": "Smith"
+}
+
+###
+
+# 2. GET CURRENT USER PROFILE (Initial Check)
+# Expects: isStudent = true, isTutor = false, studentProfile != null, tutorProfile = null
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{authToken}}
+
+###
+
+# 3. APPLY TO BECOME A TUTOR
+# Expects: isTutor flips to true, status = "PENDING"
+POST {{baseUrl}}/tutors/apply
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "headline": "Full-Stack Software Engineer & CS Graduate",
+  "bio": "I hold a CS degree and specialize in React, Node.js, and PostgreSQL.",
+  "hourlyRate": 30.00,
+  "subjects": ["React", "TypeScript", "PostgreSQL"],
+  "education": "BSc in Computer Science",
+  "languages": ["English", "Arabic"],
+  "certificates": ["AWS Certified Developer"],
+  "experience": ["2 Years Teaching Assistant"]
+}
+
+###
+
+# 4. PREVENT DUPLICATE TUTOR APPLICATION
+# Expects: 400 Bad Request ("Tutor profile already exists")
+POST {{baseUrl}}/tutors/apply
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "headline": "Trying to apply again",
+  "bio": "Should fail",
+  "hourlyRate": 25.00
+}
+
+###
+
+# 5. GET CURRENT USER PROFILE (Final Check)
+# Expects: Both studentProfile AND tutorProfile populated
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{authToken}}

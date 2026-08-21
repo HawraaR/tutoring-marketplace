@@ -10,6 +10,76 @@ model User {
   id        String   @id @default(uuid())
   email     String   @unique
   password  String
+  firstName String?
+  lastName  String?
+
+  // Unified Multi-Role Flags
+  isStudent Boolean  @default(true)
+  isTutor   Boolean  @default(false)
+  isAdmin   Boolean  @default(false)
+
+  // 1-to-1 Role Profile Relations
+  tutorProfile   TutorProfile?
+  studentProfile StudentProfile?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+}
+
+enum TutorStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model TutorProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Profile Details
+  headline        String?  // Short title (e.g., "MSc CS Student & MERN Tutor")
+  bio             String?  
+  hourlyRate      Float    @default(0.0)
+  subjects        String[] @default([]) // Taught topics e.g. ["React", "Java"]
+  education       String?  // Degree/Institution details
+  languages       String[] @default(["English"])
+
+// Status Workflow
+  verificationStatus       TutorStatus @default(PENDING)
+  rejectionReason String?  // Optional: helps admins give feedback if rejected
+
+  // Separated Qualifications
+  certificates    String[] @default([]) // e.g., ["AWS Certified", "CELTA"]
+  experience      String[] @default([]) // e.g., ["3 Years University TA"]
+
+  // Future Extensions
+  videoIntroUrl   String?
+  averageRating   Float    @default(0.0)
+  reviewCount     Int      @default(0)
+  isFeatured      Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model StudentProfile {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Basic Info
+  educationLevel    String?  // "Undergraduate", "High School", etc.
+  major             String?  // "Computer Science", etc.
+  learningGoals     String?  // Bio/Notes on objectives
+
+  // Optional Future-Feature Fields
+  preferredSubjects String[] @default([]) // For tutor matching
+  learningStyle     String?  // "Visual", "Exam Prep", "Project-Based"
+  timezone          String?  // "Asia/Beirut", "UTC", etc.
+  preferredLanguage String?  // "English", "Arabic", etc.
+  maxHourlyRate     Float?   // Budget limit for automated filtering
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
