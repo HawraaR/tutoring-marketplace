@@ -1,23 +1,26 @@
 @import 'tailwindcss';
 
-@import 'tailwindcss';
-
-/* Standard CSS variables — VS Code gives you a clickable color picker here! */
 :root {
-  --color-brand-primary: #2563eb;
-  --color-brand-primary-hover: #1d4ed8;
-  --color-brand-secondary: #0d9488;
+  --color-brand-primary: #1e3a5f;
+  --color-brand-primary-hover: #172e4c;
+  --color-brand-secondary: #4a5c75;
 
-  --color-success: #10b981;
-  --color-error: #ef4444;
-  --color-warning: #f59e0b;
+  --color-success: #4f5d46;
+  --color-error: #8b3a42;
+  --color-warning: #4a5c75;
 
-  --color-surface-bg: #f8fafc;
+  --color-burgundy: #9b2d45;
+  --color-slate-blue: #2f6aa0;
+  --color-olive: #4f7a28;
+  --color-charcoal: #16181e;
+
+  --color-ink: #1c2333;
+  --color-muted: #5b6270;
+  --color-surface-bg: #fafaf9;
   --color-surface-card: #ffffff;
-  --color-border-subtle: #e2e8f0;
+  --color-border-subtle: #e4e6ea;
 }
 
-/* Connect standard CSS variables to Tailwind v4 */
 @theme {
   --color-brand-primary: var(--color-brand-primary);
   --color-brand-primary-hover: var(--color-brand-primary-hover);
@@ -27,129 +30,28 @@
   --color-error: var(--color-error);
   --color-warning: var(--color-warning);
 
+  --color-burgundy: var(--color-burgundy);
+  --color-slate-blue: var(--color-slate-blue);
+  --color-olive: var(--color-olive);
+  --color-charcoal: var(--color-charcoal);
+
+  --color-ink: var(--color-ink);
+  --color-muted: var(--color-muted);
   --color-surface-bg: var(--color-surface-bg);
   --color-surface-card: var(--color-surface-card);
   --color-border-subtle: var(--color-border-subtle);
-  
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --font-sans: 'Source Sans 3', 'Source Sans Pro', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Source Serif 4', 'Lora', Georgia, serif;
+
+  --shadow-warm: 0 1px 3px rgb(28 35 51 / 0.08);
+  --shadow-warm-sm: 0 1px 2px rgb(28 35 51 / 0.06);
 }
 
-/* Global Base Styles */
 body {
+  margin: 0;
   font-family: var(--font-sans);
   background-color: var(--color-surface-bg);
-  color: #0f172a;
+  color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
 }
-
-/* :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
-} */

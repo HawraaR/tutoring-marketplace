@@ -5,29 +5,27 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "danger";
 }
 
-export function Button({ 
-  children, 
-  isLoading, 
-  variant = "primary", 
-  className = "", 
-  disabled, 
-  ...props 
+export function Button({
+  children,
+  isLoading,
+  variant = "primary",
+  className = "",
+  disabled,
+  ...props
 }: ButtonProps) {
-  const baseStyles = "w-full py-2.5 px-4 text-sm font-semibold rounded-lg shadow-xs transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center";
-  
   const variants = {
     primary: "bg-brand-primary hover:bg-brand-primary-hover text-white",
-    secondary: "bg-brand-secondary hover:opacity-90 text-white",
+    secondary: "bg-slate-blue hover:opacity-90 text-white",
     danger: "bg-error hover:opacity-90 text-white",
   };
 
   return (
-    <button 
-      disabled={disabled || isLoading} 
-      className={`${baseStyles} ${variants[variant]} ${className}`}
+    <button
+      disabled={disabled || isLoading}
+      className={`inline-flex w-full cursor-pointer items-center justify-center rounded-sm px-4 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${className}`}
       {...props}
     >
-      {isLoading ? "Loading..." : children}
+      {isLoading ? "Signing in…" : children}
     </button>
   );
 }
