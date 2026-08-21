@@ -4,25 +4,34 @@ import { AuthProvider } from "./context/AuthProvider";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { AuthForm } from "./components/AuthForm";
 import { Dashboard } from "./pages/Dashboard";
+import {Sessions} from "./pages/Sessions";
+import { AppLayout, AuthLayout } from "./layouts";
 
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
-  <AuthProvider>
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/login" element={<AuthForm />} />
+      <AuthProvider>
+        <Routes>
+          <Route
+            path="/login"
+            element={
+              <AuthLayout>
+                <AuthForm />
+              </AuthLayout>
+            }
+          />
 
-      {/* Protected Routes */}
-      <Route element={<ProtectedRoute />}>
-        <Route path="/dashboard" element={<Dashboard />} />
-      </Route>
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/sessions" element={<Sessions />} />
+            </Route>
+          </Route>
 
-      {/* Default Catch-All */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
-  </AuthProvider>
-</BrowserRouter>
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 };
 

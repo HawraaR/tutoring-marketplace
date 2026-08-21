@@ -88,82 +88,72 @@ export const AuthForm: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg">
-        {/* Navigation Tabs */}
-        <div className="mb-6 flex border-b border-gray-200">
-          <button
-            type="button"
-            className={`w-1/2 pb-3 text-center font-semibold transition-colors ${
-              !isRegister
-                ? "border-b-2 border-indigo-600 text-indigo-600"
-                : "text-gray-400 hover:text-gray-600"
-            }`}
-            onClick={() => handleTabSwitch(false)}
-          >
-            Login
-          </button>
-          <button
-            type="button"
-            className={`w-1/2 pb-3 text-center font-semibold transition-colors ${
-              isRegister
-                ? "border-b-2 border-indigo-600 text-indigo-600"
-                : "text-gray-400 hover:text-gray-600"
-            }`}
-            onClick={() => handleTabSwitch(true)}
-          >
-            Register
-          </button>
-        </div>
-
-        {/* Title */}
-        <h2 className="mb-4 text-2xl font-bold text-gray-800">
-          {isRegister ? "Create an Account" : "Welcome Back"}
-        </h2>
-
-        {/* Success Alert */}
-        {successMessage && (
-          <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
-            {successMessage}
-          </div>
-        )}
-
-        {/* Error Alert (Handles Zod array errors) */}
-        {errorMessages.length > 0 && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            <ul className="list-inside list-disc space-y-1">
-              {errorMessages.map((msg, idx) => (
-                <li key={idx}>{msg}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Auth Form utilizing Reusable UI Components */}
-        <form onSubmit={handleSubmit} noValidate className="space-y-4">
-          <Input
-            label="Email Address"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-          />
-
-          <Input
-            label="Password"
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-          />
-
-          <Button type="submit" disabled={isLoading} className="w-full">
-            {isLoading ? "Processing..." : isRegister ? "Sign Up" : "Sign In"}
-          </Button>
-        </form>
+    <div>
+      <div className="mb-6 flex gap-6 border-b border-border-subtle">
+        <button
+          type="button"
+          className={`pb-2.5 text-sm font-semibold ${
+            !isRegister ? "border-b-2 border-brand-primary text-brand-primary" : "text-muted hover:text-ink"
+          }`}
+          onClick={() => handleTabSwitch(false)}
+        >
+          Sign in
+        </button>
+        <button
+          type="button"
+          className={`pb-2.5 text-sm font-semibold ${
+            isRegister ? "border-b-2 border-brand-primary text-brand-primary" : "text-muted hover:text-ink"
+          }`}
+          onClick={() => handleTabSwitch(true)}
+        >
+          Create account
+        </button>
       </div>
+
+      <h2 className="font-serif mb-1 text-2xl font-semibold text-ink">
+        {isRegister ? "Create an account" : "Sign in"}
+      </h2>
+      <p className="mb-6 text-sm text-muted">
+        {isRegister
+          ? "For currently enrolled university students."
+          : "Use the email associated with your Tutorium account."}
+      </p>
+
+      {successMessage && (
+        <p className="mb-4 text-sm text-olive">{successMessage}</p>
+      )}
+
+      {errorMessages.length > 0 && (
+        <ul className="mb-4 list-inside list-disc space-y-1 text-sm text-error">
+          {errorMessages.map((msg, idx) => (
+            <li key={idx}>{msg}</li>
+          ))}
+        </ul>
+      )}
+
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <Input
+          label="Email"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@campus.edu"
+        />
+
+        <Input
+          label="Password"
+          type="password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Something you’ll remember"
+        />
+
+        <Button type="submit" disabled={isLoading} className="mt-1">
+          {isRegister ? "Create account" : "Sign in"}
+        </Button>
+      </form>
     </div>
   );
 };
