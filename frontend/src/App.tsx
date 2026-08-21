@@ -4,8 +4,9 @@ import { AuthProvider } from "./context/AuthProvider";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { AuthForm } from "./components/AuthForm";
 import { Dashboard } from "./pages/Dashboard";
-import {Sessions} from "./pages/Sessions";
+import { Sessions } from "./pages/Sessions";
 import { AppLayout, AuthLayout } from "./layouts";
+import { Messages } from "./pages/Messages";
 
 export const App: React.FC = () => {
   return (
@@ -25,6 +26,7 @@ export const App: React.FC = () => {
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/sessions" element={<Sessions />} />
+              <Route path="/messages" element={<Messages />} />
             </Route>
           </Route>
 
