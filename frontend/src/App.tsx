@@ -7,6 +7,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { Sessions } from "./pages/Sessions";
 import { AppLayout, AuthLayout } from "./layouts";
 import { Messages } from "./pages/Messages";
+import { Calendar } from "./pages/Calendar";
 
 export const App: React.FC = () => {
   return (
@@ -27,6 +28,7 @@ export const App: React.FC = () => {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/sessions" element={<Sessions />} />
               <Route path="/messages" element={<Messages />} />
+              <Route path="/calendar" element={<Calendar/>}/>
             </Route>
           </Route>
 
