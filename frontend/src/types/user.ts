@@ -3,4 +3,8 @@ export interface User {
   email: string;
   createdAt: string;
   updatedAt: string;
+
+  isStudent: boolean;
+  isTutor: boolean;
+  isAdmin: boolean;
 }

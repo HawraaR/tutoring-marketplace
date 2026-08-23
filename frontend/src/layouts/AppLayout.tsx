@@ -10,26 +10,30 @@ export function AppLayout() {
   const showHeader = pathname !== "/messages";
 
   return (
-    <div className="flex h-screen overflow-hidden bg-surface-bg">
-      <Sidebar
-        isOpen={sidebarOpen}
-        isCollapsed={sidebarCollapsed}
-        onClose={() => setSidebarOpen(false)}
-        onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
-      />
+    <>
+      <div className="flex h-screen overflow-hidden bg-surface-bg">
+          <Sidebar
+            isOpen={sidebarOpen}
+            isCollapsed={sidebarCollapsed}
+            onClose={() => setSidebarOpen(false)}
+            onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
+          />
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        {showHeader && <Header onMenuClick={() => setSidebarOpen(true)} />}
-        <main
-          className={
-            showHeader
-              ? "min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-4"
-              : "min-h-0 flex-1 overflow-hidden"
-          }
-        >
-          <Outlet context={{ onMenuClick: () => setSidebarOpen(true) }} />
-        </main>
-      </div>
-    </div>
+          <div className="flex min-w-0 flex-1 flex-col">
+            {showHeader && <Header onMenuClick={() => setSidebarOpen(true)} />}
+            <main
+              className={
+                showHeader
+                  ? "min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-4"
+                  : "min-h-0 flex-1 overflow-hidden"
+              }
+            >
+              <Outlet context={{ onMenuClick: () => setSidebarOpen(true) }} />
+            </main>
+            
+          </div>
+        </div>
+    </>
+   
   );
 }
