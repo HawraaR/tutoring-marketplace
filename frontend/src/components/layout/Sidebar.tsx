@@ -15,6 +15,7 @@ const navItems = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard, ready: true },
   { to: "/sessions", label: "Sessions", icon: Calendar, ready: true },
   { to: "/messages", label: "Messages", icon: MessageSquare, ready: true },
+  { to: "/calendar", label: "Calendar", icon: Calendar, ready: true },
   { to: "#", label: "Directory", icon: Compass, ready: false },
 ] as const;
 
