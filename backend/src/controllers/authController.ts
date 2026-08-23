@@ -7,34 +7,6 @@ import { prisma } from "../../prisma/db";
 
 const SALT_ROUNDS = 10;
 
-// REGISTER HANDLER
-// export const register = async (
-//   req: Request<{}, {}, RegisterInput>,
-//   res: Response
-// ) => {
-//   try {
-//     const { email, password } = req.body;
-
-//     const existingUser = await prisma.user.findUnique({ where: { email } });
-//     if (existingUser) {
-//       return res.status(409).json({ error: "User with this email already exists." });
-//     }
-
-//     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-//     const newUser = await prisma.user.create({
-//       data: { email, password: hashedPassword },
-//     });
-
-//     return res.status(201).json({
-//       message: "User registered successfully.",
-//       user: { id: newUser.id, email: newUser.email },
-//     });
-//   } catch (error) {
-//     console.error("Register error:", error);
-//     return res.status(500).json({ error: "Internal server error." });
-//   }
-// };
-
 // REGISTER USER
 export const register = async (req: Request, res: Response) => {
   try {
@@ -112,45 +84,21 @@ export const login = async (
     return res.status(200).json({
       message: "Login successful.",
       token,
-      user: { id: user.id, email: user.email },
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isStudent: user.isStudent,
+        isTutor: user.isTutor,
+        isAdmin: user.isAdmin,
+      },
     });
   } catch (error) {
     console.error("Login error:", error);
     return res.status(500).json({ error: "Internal server error." });
   }
 };
-
-// export const getMe = async (req: Request, res: Response) => {
-//   try {
-//     // Extract userId attached by your auth middleware
-//     const userId = (req as any).user?.id || (req as any).user?.userId;
-
-//     if (!userId) {
-//       return res.status(401).json({ error: "Unauthorized" });
-//     }
-
-//     // Fetch user from DB
-//     const user = await prisma.user.findUnique({
-//       where: { id: userId },
-//       select: {
-//         id: true,
-//         email: true,
-//         createdAt: true,
-//         updatedAt: true,
-//         // password is intentionally EXCLUDED
-//       },
-//     });
-
-//     if (!user) {
-//       return res.status(404).json({ error: "User not found" });
-//     }
-
-//     return res.status(200).json({ user });
-//   } catch (error) {
-//     console.error("Error in getMe:", error);
-//     return res.status(500).json({ error: "Internal server error" });
-//   }
-// };
 
 export const getMe = async (req: Request, res: Response) => {
   try {

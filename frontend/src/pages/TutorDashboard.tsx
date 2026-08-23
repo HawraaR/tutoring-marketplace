@@ -1,7 +1,7 @@
 export function TutorD(){
     return(
         <>
-            <h1>welcom Tutor!</h1>
+            <h1>welcome Tutor!</h1>
         </>
     );
 }

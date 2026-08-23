@@ -16,6 +16,7 @@ import LandingPage from "./pages/LandingPage";
 
 const DashboardRedirect: React.FC = () => {
   const { user } = useAuth();
+  console.log("User in DashboardRedirect:", user);
 
   if (user?.isTutor) {
     return <TutorD />;
