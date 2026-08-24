@@ -18,9 +18,15 @@ model User {
   isTutor   Boolean  @default(false)
   isAdmin   Boolean  @default(false)
 
-  // 1-to-1 Role Profile Relations
+  // 1-to-1 Role Profiles
   tutorProfile   TutorProfile?
   studentProfile StudentProfile?
+
+  // Direct Core System Relations (Uses User ID directly)
+  availability    AvailabilitySlot[] @relation("TutorAvailability")
+  studentBookings Booking[]          @relation("StudentBookings")
+  tutorBookings   Booking[]          @relation("TutorBookings")
+  tutorSubjects   TutorSubject[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -33,53 +39,119 @@ enum TutorStatus {
 }
 
 model TutorProfile {
-  id              String   @id @default(uuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Profile Details
-  headline        String?  // Short title (e.g., "MSc CS Student & MERN Tutor")
-  bio             String?  
-  hourlyRate      Float    @default(0.0)
-  subjects        String[] @default([]) // Taught topics e.g. ["React", "Java"]
-  education       String?  // Degree/Institution details
-  languages       String[] @default(["English"])
+  // Profile & Marketing Info
+  headline   String?  
+  bio        String?  
+  hourlyRate Float    @default(0.0)
+  education  String?  
+  languages  String[] @default(["English"])
 
-// Status Workflow
-  verificationStatus       TutorStatus @default(PENDING)
-  rejectionReason String?  // Optional: helps admins give feedback if rejected
+  // Status Workflow
+  verificationStatus TutorStatus @default(PENDING)
+  rejectionReason    String?
 
-  // Separated Qualifications
-  certificates    String[] @default([]) // e.g., ["AWS Certified", "CELTA"]
-  experience      String[] @default([]) // e.g., ["3 Years University TA"]
+  // Qualifications
+  certificates String[] @default([])
+  experience   String[] @default([])
 
-  // Future Extensions
-  videoIntroUrl   String?
-  averageRating   Float    @default(0.0)
-  reviewCount     Int      @default(0)
-  isFeatured      Boolean  @default(false)
+  // Extensions
+  videoIntroUrl String?
+  averageRating Float    @default(0.0)
+  reviewCount   Int      @default(0)
+  isFeatured    Boolean  @default(false)
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model StudentProfile {
-  id                String   @id @default(uuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Basic Info
-  educationLevel    String?  // "Undergraduate", "High School", etc.
-  major             String?  // "Computer Science", etc.
-  learningGoals     String?  // Bio/Notes on objectives
+  // Basic Info & Preferences
+  educationLevel    String?
+  major             String?
+  learningGoals     String?
+  preferredSubjects String[] @default([])
+  learningStyle     String?
+  timezone          String?
+  preferredLanguage String?
+  maxHourlyRate     Float?
 
-  // Optional Future-Feature Fields
-  preferredSubjects String[] @default([]) // For tutor matching
-  learningStyle     String?  // "Visual", "Exam Prep", "Project-Based"
-  timezone          String?  // "Asia/Beirut", "UTC", etc.
-  preferredLanguage String?  // "English", "Arabic", etc.
-  maxHourlyRate     Float?   // Budget limit for automated filtering
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+model Subject {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  category    String?
+  description String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  bookings Booking[]
+  tutors   TutorSubject[]
+}
+
+// Junction table: Maps Taught Subjects to Tutors directly via User ID
+model TutorSubject {
+  tutorId   String
+  subjectId String
+
+  tutor   User    @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@id([tutorId, subjectId])
+}
+
+model AvailabilitySlot {
+  id        String   @id @default(uuid())
+  tutorId   String
+  startTime DateTime
+  endTime   DateTime
+  isBooked  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tutor   User     @relation("TutorAvailability", fields: [tutorId], references: [id], onDelete: Cascade)
+  booking Booking?
+
+  @@index([tutorId, startTime, endTime])
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model Booking {
+  id                 String        @id @default(uuid())
+  studentId          String
+  tutorId            String
+  subjectId          String
+  availabilitySlotId String?       @unique
+  startTime          DateTime
+  endTime            DateTime
+  status             BookingStatus @default(PENDING)
+  totalPrice         Float?
+  notes              String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  student          User              @relation("StudentBookings", fields: [studentId], references: [id], onDelete: Cascade)
+  tutor            User              @relation("TutorBookings", fields: [tutorId], references: [id], onDelete: Cascade)
+  subject          Subject           @relation(fields: [subjectId], references: [id])
+  availabilitySlot AvailabilitySlot? @relation(fields: [availabilitySlotId], references: [id])
+
+  @@index([studentId])
+  @@index([tutorId])
+  @@index([subjectId])
 }

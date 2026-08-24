@@ -1,0 +1,21 @@
+### Base Configuration
+@baseUrl = http://localhost:5000/api
+@subjectId = 44bb7f74-f4c0-4b36-9e4e-50cb6332f6de
+
+### 1. Get All Subjects
+GET {{baseUrl}}/subjects
+Content-Type: application/json
+
+### 2. Get Single Subject by ID
+GET {{baseUrl}}/subjects/{{subjectId}}
+Content-Type: application/json
+
+### 3. Create a New Subject
+POST {{baseUrl}}/subjects
+Content-Type: application/json
+
+{
+  "name": "Computer Science",
+  "category": "Technology",
+  "description": "Learn algorithms, data structures, and web development."
+}

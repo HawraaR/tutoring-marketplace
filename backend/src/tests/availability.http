@@ -1,0 +1,41 @@
+### Base Configuration
+@baseUrl = http://localhost:5000/api/availability
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI3YjVlZWU5ZS1kNWNjLTQ5NjctYWIyZS01ZTg1ZDc4ZDE1ZjIiLCJlbWFpbCI6InNhcmFoLm1hdGhAZXhhbXBsZS5jb20iLCJpYXQiOjE3ODc1ODA4MTMsImV4cCI6MTc4ODE4NTYxM30.XFk_X0xaaSUIZqXW4Lmk20KDewxiE4M1e59wDen70u8
+@tutorId = 7b5eee9e-d5cc-4967-ab2e-5e85d78d15f2
+@slotId = 355e169e-d829-4554-b9df-74d5e145edfd
+
+### 1. Get Tutor Availability Schedule (Public Route)
+GET {{baseUrl}}/tutors/{{tutorId}}
+Content-Type: application/json
+
+###
+
+### 2. Create Availability Slot (Protected)
+POST {{baseUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "tutorId": "{{tutorId}}",
+  "startTime": "2026-09-01T10:00:00.000Z",
+  "endTime": "2026-09-01T11:00:00.000Z"
+}
+
+###
+
+### 3. Update Availability Slot (Protected)
+PUT {{baseUrl}}/{{slotId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "startTime": "2026-09-01T10:30:00.000Z",
+  "endTime": "2026-09-01T11:30:00.000Z"
+}
+
+###
+
+### 4. Delete Availability Slot (Protected)
+DELETE {{baseUrl}}/{{slotId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
