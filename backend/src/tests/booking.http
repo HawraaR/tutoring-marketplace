@@ -1,0 +1,99 @@
+### Base Configuration
+@baseUrl = http://localhost:5000/api
+
+@studentId = 5346eebd-7f99-48ec-8a54-9ce14d6e7f92
+@tutorId = 7b5eee9e-d5cc-4967-ab2e-5e85d78d15f2
+@subjectId = a5c453bc-9f50-49b9-bbef-bdc0a141babc
+@slotId = f12c5d13-4410-49d6-8dbf-1c16dc9967fa
+@bookingId = 52dc708a-65c8-4b41-8878-b128034b7387
+
+### -------------------------------------------------------------------
+### AUTHENTICATION (Run these first to capture tokens automatically)
+### -------------------------------------------------------------------
+
+### 1. Login as Student
+# @name loginStudent
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "liam.student@example.com",
+  "password": "Password123!"
+}
+
+###
+
+### 2. Login as Tutor
+# @name loginTutor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "sarah.math@example.com",
+  "password": "Password123!"
+}
+
+### -------------------------------------------------------------------
+### DYNAMIC TOKENS (Extracted from login responses above)
+### -------------------------------------------------------------------
+@studentToken = {{loginStudent.response.body.token}}
+@tutorToken = {{loginTutor.response.body.token}}
+
+### -------------------------------------------------------------------
+### BOOKING ENDPOINTS
+### -------------------------------------------------------------------
+
+### 3. Create a Booking (Student Action)
+POST {{baseUrl}}/bookings
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "studentId": "{{studentId}}",
+  "tutorId": "{{tutorId}}",
+  "subjectId": "{{subjectId}}",
+  "availabilitySlotId": "{{slotId}}"
+}
+
+###
+
+### 4a. Get Bookings for Student Dashboard
+GET {{baseUrl}}/bookings/user
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+###
+
+### 4b. Get Bookings for Tutor Dashboard
+GET {{baseUrl}}/bookings/user
+Authorization: Bearer {{tutorToken}}
+Content-Type: application/json
+
+###
+
+### 5a. Update Booking Status - Cancel (Student Action)
+PATCH {{baseUrl}}/bookings/{{bookingId}}/status
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "status": "CANCELLED"
+}
+
+###
+
+### 5b. Update Booking Status - Confirm (Tutor Action)
+PATCH {{baseUrl}}/bookings/{{bookingId}}/status
+Authorization: Bearer {{tutorToken}}
+Content-Type: application/json
+
+{
+  "status": "CONFIRMED"
+}
+
+###
+
+### 6. Delete Booking Record (Tutor / Admin Action)
+DELETE {{baseUrl}}/bookings/{{bookingId}}
+Authorization: Bearer {{tutorToken}}
+Content-Type: application/json

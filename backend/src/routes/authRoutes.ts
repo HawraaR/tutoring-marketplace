@@ -1,9 +1,9 @@
 // backend/src/routes/auth.ts
 import { Router } from "express";
 import { register, login, getMe } from "../controllers/authController";
-import { validateBody } from "../middleware/validate";
+import { validateBody } from "../middlewares/validate";
 import { registerSchema, loginSchema } from "../schemas/authSchema";
-import { authenticateToken } from "../middleware/auth";
+import { authenticateToken } from "../middlewares/auth";
 
 const router = Router();
 

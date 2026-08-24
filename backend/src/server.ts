@@ -8,6 +8,10 @@ import cors from "cors";
 import userRoutes from "./routes/userRoutes";
 import authRoutes from "./routes/authRoutes";
 import tutorRoutes from "./routes/tutorRoutes";
+import subjectRoutes from "./routes/subjectRoutes";
+import bookingRoutes from "./routes/bookingRoutes";
+import availabilityRoutes from "./routes/availabilityRoutes";
+
 
 const app = express();
 app.use(express.json());
@@ -24,6 +28,9 @@ app.use((req, res, next) => {
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/tutors", tutorRoutes);
+app.use("/api/availability", availabilityRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/subjects", subjectRoutes);
 
 // Mount AFTER all app.use() routes
 app.use((err: any, req: any, res: any, next: any) => {

@@ -12,7 +12,7 @@ import { AppLayout, AuthLayout } from "./layouts";
 import { Messages } from "./pages/Messages";
 import { Calendar } from "./pages/Calendar";
 
-import LandingPage from "./pages/LandingPage";
+import LandingPage from "./pages/LandingPage2";
 
 const DashboardRedirect: React.FC = () => {
   const { user } = useAuth();
