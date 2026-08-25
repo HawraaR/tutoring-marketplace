@@ -1,4 +1,4 @@
-import type { AuthResponse, LoginInput, RegisterInput } from "../../types";
+import type { AuthResponse, LoginInput, RegisterInput } from "../types";
 import { api } from "./axios";
 
 

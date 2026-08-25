@@ -7,16 +7,28 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   X,
+  DollarSign,
+  GraduationCap,
+  UserRound,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { firstNameFromEmail, initialsFromEmail } from "../../lib/displayName";
 
-const navItems = [
+const studentNavItems = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard, ready: true },
   { to: "/sessions", label: "Sessions", icon: Calendar, ready: true },
   { to: "/messages", label: "Messages", icon: MessageSquare, ready: true },
   { to: "/calendar", label: "Calendar", icon: Calendar, ready: true },
   { to: "#", label: "Directory", icon: Compass, ready: false },
+] as const;
+
+const tutorNavItems = [
+  { to: "/dashboard", label: "Overview", icon: LayoutDashboard, ready: true },
+  { to: "/sessions", label: "My sessions", icon: Calendar, ready: true },
+  { to: "#", label: "Students", icon: UserRound, ready: false },
+  { to: "/calendar", label: "Availability", icon: Calendar, ready: true },
+  { to: "#", label: "Earnings", icon: DollarSign, ready: false },
+  { to: "/messages", label: "Messages", icon: MessageSquare, ready: true },
 ] as const;
 
 interface SidebarProps {
@@ -26,9 +38,20 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
-export function Sidebar({ isOpen, isCollapsed, onClose, onToggle }: SidebarProps) {
-  const { user, logout } = useAuth();
+export function Sidebar({
+  isOpen,
+  isCollapsed,
+  onClose,
+  onToggle,
+}: SidebarProps) {
+  const { user, logout, activeRole, setActiveRole } = useAuth();
   const name = firstNameFromEmail(user?.email);
+  const hasBothRoles = Boolean(user?.isStudent && user?.isTutor);
+  const navItems = activeRole === "tutor" ? tutorNavItems : studentNavItems;
+
+  const switchRole = (role: "student" | "tutor") => {
+    setActiveRole(role);
+  };
 
   return (
     <>
@@ -44,13 +67,15 @@ export function Sidebar({ isOpen, isCollapsed, onClose, onToggle }: SidebarProps
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex w-60 flex-col overflow-hidden border-r border-border-subtle bg-surface-card transition-all duration-200 ease-out md:static ${
           isOpen ? "translate-x-0" : "-translate-x-full"
-        } ${
-          isCollapsed ? "md:w-16 md:translate-x-0" : "md:translate-x-0"
-        }`}
+        } ${isCollapsed ? "md:w-16 md:translate-x-0" : "md:translate-x-0"}`}
       >
-        <div className={`flex items-center border-b border-border-subtle py-4 ${isCollapsed ? "justify-center px-2" : "justify-between px-4"}`}>
+        <div
+          className={`flex items-center border-b border-border-subtle py-4 ${isCollapsed ? "justify-center px-2" : "justify-between px-4"}`}
+        >
           <div className={isCollapsed ? "hidden" : ""}>
-            <p className="font-serif text-lg font-semibold tracking-tight text-ink">Tutorium</p>
+            <p className="font-serif text-lg font-semibold tracking-tight text-ink">
+              Tutorium
+            </p>
           </div>
           <button
             type="button"
@@ -59,7 +84,11 @@ export function Sidebar({ isOpen, isCollapsed, onClose, onToggle }: SidebarProps
             className="hidden rounded-sm p-1 text-muted hover:bg-surface-bg hover:text-ink md:block"
             onClick={onToggle}
           >
-            {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+            {isCollapsed ? (
+              <PanelLeftOpen className="h-4 w-4" />
+            ) : (
+              <PanelLeftClose className="h-4 w-4" />
+            )}
           </button>
           <button
             type="button"
@@ -70,6 +99,27 @@ export function Sidebar({ isOpen, isCollapsed, onClose, onToggle }: SidebarProps
             <X className="h-5 w-5" />
           </button>
         </div>
+
+        {!isCollapsed && hasBothRoles && (
+          <div className="mx-2 mt-3 flex rounded-sm border border-border-subtle bg-surface-bg p-1">
+            <button
+              type="button"
+              onClick={() => switchRole("student")}
+              className={`flex-1 rounded-sm px-2 py-1.5 text-[11px] font-medium ${activeRole === "student" ? "bg-surface-card text-brand-primary shadow-sm" : "text-muted hover:text-ink"}`}
+            >
+              <GraduationCap className="mr-1 inline h-3.5 w-3.5" />
+              Student
+            </button>
+            <button
+              type="button"
+              onClick={() => switchRole("tutor")}
+              className={`flex-1 rounded-sm px-2 py-1.5 text-[11px] font-medium ${activeRole === "tutor" ? "bg-surface-card text-brand-primary shadow-sm" : "text-muted hover:text-ink"}`}
+            >
+              <UserRound className="mr-1 inline h-3.5 w-3.5" />
+              Tutor
+            </button>
+          </div>
+        )}
 
         <nav className={`flex flex-col ${isCollapsed ? "px-1" : "px-2"}`}>
           {navItems.map(({ to, label, icon: Icon, ready }) =>
@@ -104,8 +154,12 @@ export function Sidebar({ isOpen, isCollapsed, onClose, onToggle }: SidebarProps
           )}
         </nav>
 
-        <div className={`mt-auto border-t border-border-subtle p-4 ${isCollapsed ? "hidden" : ""}`}>
-          <p className="font-serif text-sm font-semibold text-ink">Offer tutoring</p>
+        <div
+          className={`mt-auto border-t border-border-subtle p-4 ${isCollapsed ? "hidden" : ""}`}
+        >
+          <p className="font-serif text-sm font-semibold text-ink">
+            Offer tutoring
+          </p>
           <p className="mt-1 text-xs leading-relaxed text-muted">
             List courses you can teach. Set an hourly rate.
           </p>
@@ -117,7 +171,9 @@ export function Sidebar({ isOpen, isCollapsed, onClose, onToggle }: SidebarProps
           </button>
         </div>
 
-        <div className={`flex items-center border-t border-border-subtle py-3 ${isCollapsed ? "mt-auto justify-center px-2" : "gap-3 px-4"}`}>
+        <div
+          className={`flex items-center border-t border-border-subtle py-3 ${isCollapsed ? "mt-auto justify-center px-2" : "gap-3 px-4"}`}
+        >
           <span className="flex h-8 w-8 items-center justify-center rounded-sm border border-border-subtle bg-brand-primary  text-[11px] font-medium text-white">
             {initialsFromEmail(user?.email)}
           </span>
