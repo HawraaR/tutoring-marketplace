@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { registerUser, loginUser } from "../services/api/authAPI";
+import { registerUser, loginUser } from "../api/authAPI";
 import type { ApiErrorResponse } from "../types";
 
 // Import your custom reusable components

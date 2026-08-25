@@ -1,4 +1,6 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import axios from "axios";
+import toast from "react-hot-toast";
 import {
   CalendarPlus,
   ChevronLeft,
@@ -9,28 +11,25 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import {
-  initialCalendarEvents,
-  type CalendarEvent,
-  type CalendarEventTone,
-} from "../data/calendar";
+import { api } from "../api/axios";
+import { useAuth } from "../context/AuthContext";
+import type {
+  CalendarMode,
+  CalendarEvent,
+  AvailabilityForm,
+  AvailabilitySlot,
+  CreateAvailabilityPayload,
+  CreateBookingPayload,
+  EventTone,
+  Subject,
+} from "../types";
 
-type CalendarMode = "student" | "tutor";
-type AvailabilityForm = {
-  title: string;
-  course: string;
-  date: string;
-  start: string;
-  end: string;
-  mode: string;
-  note: string;
-};
-
-const toneClasses: Record<CalendarEventTone, string> = {
+const toneClasses: Record<EventTone, string> = {
   burgundy: "border-l-burgundy bg-burgundy/10 text-burgundy",
   olive: "border-l-olive bg-olive/10 text-olive",
   slate: "border-l-slate-blue bg-slate-blue/10 text-slate-blue",
 };
+
 const monthNames = [
   "January",
   "February",
@@ -45,13 +44,14 @@ const monthNames = [
   "November",
   "December",
 ];
+
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function dateKey(date: Date) {
+function dateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-function calendarDays(month: Date) {
+function calendarDays(month: Date): Date[] {
   const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
   const start = new Date(
     month.getFullYear(),
@@ -86,25 +86,132 @@ function EventPill({
   );
 }
 
+const getAvailabilityData = async (
+  tutorId: string,
+): Promise<CalendarEvent[]> => {
+  const res = await api.get<AvailabilitySlot[]>(
+    `/availability/tutors/${tutorId}`,
+  );
+  const rawData = res.data || [];
+
+  return rawData.map((slot) => {
+    const startObj = new Date(slot.startTime);
+    const endObj = new Date(slot.endTime);
+
+    // Extract local YYYY-MM-DD date matching local timezone
+    const localYear = startObj.getFullYear();
+    const localMonth = String(startObj.getMonth() + 1).padStart(2, "0");
+    const localDay = String(startObj.getDate()).padStart(2, "0");
+    const localDateStr = `${localYear}-${localMonth}-${localDay}`;
+
+    return {
+      id: slot.id,
+      date: localDateStr,
+      start: startObj.toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true, // Enables 12-hour format with AM/PM (e.g., "6:00 AM")
+      }),
+      end: endObj.toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true, // Enables 12-hour format with AM/PM (e.g., "7:00 AM")
+      }),
+      title: slot.tutor?.name ?? "Tutoring Session",
+      tutor: slot.tutor?.name ?? "Tutor",
+      course: "General",
+      mode: "Remote",
+      note: "",
+      tone: slot.isBooked ? "slate" : "olive",
+      status: slot.isBooked ? "booked" : "available",
+    };
+  });
+};
+
 export function Calendar() {
-  const [events, setEvents] = useState(initialCalendarEvents);
-  const [mode, setMode] = useState<CalendarMode>("student");
-  const [month, setMonth] = useState(new Date(2026, 7, 1));
-  const [selectedDate, setSelectedDate] = useState("2026-08-22");
+  const { user, activeRole } = useAuth();
+  const mode: CalendarMode = activeRole;
+
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [month, setMonth] = useState<Date>(new Date(2026, 7, 1));
+  const [selectedDate, setSelectedDate] = useState<string>("2026-08-22");
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
     null,
   );
-  const [notice, setNotice] = useState("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [selectedSubjectId, setSelectedSubjectId] = useState("");
+
   const [form, setForm] = useState<AvailabilityForm>({
     title: "",
-    course: "MATH 201",
+    course: "",
     date: "2026-08-22",
     start: "10:00",
     end: "11:00",
     mode: "Remote",
     note: "",
   });
+
+  const refreshSchedule = async (): Promise<void> => {
+    setLoading(true);
+    try {
+      if (!user?.id) return;
+      const mappedEvents = await getAvailabilityData(user.id);
+      setEvents(mappedEvents);
+    } catch (err: unknown) {
+      console.error("Failed to refresh schedule:", err);
+      toast.error(
+        axios.isAxiosError<{ message?: string }>(err)
+          ? err.response?.data?.message || "Operation failed"
+          : "Operation failed",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let isSubscribed = true;
+
+    if (!user?.id) return;
+
+    getAvailabilityData(user.id)
+      .then((mappedEvents) => {
+        if (isSubscribed) {
+          setEvents(mappedEvents);
+        }
+      })
+      .catch((err) => {
+        if (isSubscribed) {
+          console.error("Failed to load schedule:", err);
+          toast.error(
+            axios.isAxiosError<{ message?: string; error?: string }>(err)
+              ? err.response?.data?.message || err.response?.data?.error || "Operation failed"
+              : "Operation failed",
+          );
+        }
+      });
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [month, user?.id]);
+
+  useEffect(() => {
+    api.get<Subject[]>("/subjects")
+      .then((response) => setSubjects(response.data))
+      .catch((err: unknown) => {
+        console.error("Failed to load subjects:", err);
+            toast.error(
+              axios.isAxiosError<{ message?: string; error?: string }>(err)
+                ? err.response?.data?.message || err.response?.data?.error || "Operation failed"
+                : "Operation failed",
+            );
+      });
+  }, []);
+
   const days = useMemo(() => calendarDays(month), [month]);
+
   const eventsByDate = useMemo(
     () =>
       events.reduce<Record<string, CalendarEvent[]>>((groups, event) => {
@@ -113,374 +220,329 @@ export function Calendar() {
       }, {}),
     [events],
   );
-  const changeMonth = (offset: number) =>
+
+  const changeMonth = (offset: number): void =>
     setMonth(
       (current) =>
         new Date(current.getFullYear(), current.getMonth() + offset, 1),
     );
-  const updateForm = (field: keyof AvailabilityForm, value: string) =>
+
+  const updateForm = (field: keyof AvailabilityForm, value: string): void =>
     setForm((current) => ({ ...current, [field]: value }));
-  const openCreateForm = (date = selectedDate) => {
+
+  const openCreateForm = (date = selectedDate): void => {
     setSelectedDate(date);
     setSelectedEvent(null);
     setForm((current) => ({ ...current, date }));
   };
-  const createEvent = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!form.title.trim()) return;
-    setEvents((current) => [
-      ...current,
-      {
-        id: `event-${Date.now()}`,
-        ...form,
-        title: form.title.trim(),
-        tutor: "You",
-        tone: "burgundy",
-        status: "available",
-      },
-    ]);
-    setNotice("Availability slot published.");
-    setForm((current) => ({ ...current, title: "", note: "" }));
+
+  const createEvent = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+    if (!form.date || !form.start || !form.end) return;
+
+    try {
+      const payload: CreateAvailabilityPayload = {
+        // Removing 'Z' lets the browser treatform.start as LOCAL time before converting to ISO
+        startTime: new Date(`${form.date}T${form.start}:00`).toISOString(),
+        endTime: new Date(`${form.date}T${form.end}:00`).toISOString(),
+      };
+
+      await api.post<AvailabilitySlot>("/availability", payload);
+      toast.success("Slot published successfully!");
+      setForm((current) => ({ ...current, title: "", note: "" }));
+      await refreshSchedule();
+    } catch (err: unknown) {
+      if (axios.isAxiosError<{ message?: string; error?: string }>(err)) {
+        toast.error(err.response?.data?.message || err.response?.data?.error || "Operation failed");
+      } else {
+        toast.error("Operation failed");
+      }
+    }
   };
-  const bookEvent = () => {
+
+  // Helper function to convert "6:00 AM" or "02:30 PM" to "06:00" or "14:30"
+  const convert12to24 = (time12h: string): string => {
+    const [time, modifier] = time12h.split(" ");
+    const [rawHours, minutes] = time.split(":");
+    let hours = rawHours;
+
+    if (hours === "12") {
+      hours = "00";
+    }
+
+    if (modifier?.toUpperCase() === "PM") {
+      hours = String(parseInt(hours, 10) + 12);
+    }
+
+    return `${hours.padStart(2, "0")}:${minutes}`;
+  };
+
+  const bookEvent = async (): Promise<void> => {
     if (!selectedEvent) return;
-    setEvents((current) =>
-      current.map((event) =>
-        event.id === selectedEvent.id ? { ...event, status: "booked" } : event,
-      ),
-    );
-    setSelectedEvent({ ...selectedEvent, status: "booked" });
-    setNotice(`${selectedEvent.title} is now on your sessions list.`);
+    if (!selectedSubjectId) {
+      toast.error("Select a subject before booking.");
+      return;
+    }
+
+    try {
+      const start24 = convert12to24(selectedEvent.start);
+      const end24 = convert12to24(selectedEvent.end);
+
+      const payload: CreateBookingPayload = {
+        subjectId: selectedSubjectId,
+        startTime: new Date(`${selectedEvent.date}T${start24}:00`).toISOString(),
+        endTime: new Date(`${selectedEvent.date}T${end24}:00`).toISOString(),
+        availabilitySlotId: selectedEvent.id,
+        notes: selectedEvent.note,
+      };
+
+      await api.post("/bookings", payload);
+      toast.success("Booking created!");
+      setSelectedEvent(null);
+      await refreshSchedule();
+    } catch (err: unknown) {
+      if (axios.isAxiosError<{ message?: string; error?: string }>(err)) {
+        toast.error(err.response?.data?.message || err.response?.data?.error || "Operation failed");
+      } else {
+        toast.error("Operation failed");
+      }
+    }
   };
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mx-auto flex max-w-7xl flex-col gap-4 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 pb-4">
         <div>
-          <p className="text-xs font-medium tracking-[0.16em] text-burgundy uppercase">
-            Tutorium schedule
-          </p>
-          <h1 className="font-serif text-2xl font-semibold text-ink">
-            Calendar
+          <h1 className="text-2xl font-semibold text-gray-900">
+            {monthNames[month.getMonth()]} {month.getFullYear()}
           </h1>
-          <p className="mt-1 text-sm text-muted">
-            Browse open tutoring slots or publish your own availability.
+          <p className="text-sm text-gray-500">
+            {loading
+              ? "Syncing schedule..."
+              : "Manage and view availability slots"}
           </p>
         </div>
-        <div className="flex items-center gap-2 self-start rounded-sm border border-border-subtle bg-surface-card p-1 sm:self-auto">
-          <button
-            type="button"
-            onClick={() => {
-              setMode("student");
-              setSelectedEvent(null);
-            }}
-            className={`rounded-sm px-3 py-1.5 text-xs font-medium ${mode === "student" ? "bg-brand-primary text-white" : "text-muted hover:text-ink"}`}
-          >
-            Find a session
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMode("tutor");
-              setSelectedEvent(null);
-            }}
-            className={`rounded-sm px-3 py-1.5 text-xs font-medium ${mode === "tutor" ? "bg-brand-primary text-white" : "text-muted hover:text-ink"}`}
-          >
-            Tutor availability
-          </button>
+
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center rounded-sm border border-border-subtle bg-surface-card px-2.5 py-1.5 text-xs font-medium capitalize text-brand-primary">
+            {activeRole} mode
+          </span>
+
+          <div className="flex items-center gap-1 border-l border-gray-200 pl-3">
+            <button
+              type="button"
+              onClick={() => changeMonth(-1)}
+              className="rounded-md p-1.5 text-gray-600 hover:bg-gray-100"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => changeMonth(1)}
+              className="rounded-md p-1.5 text-gray-600 hover:bg-gray-100"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </div>
-      {notice && (
-        <div className="border-l-2 border-olive bg-olive/10 px-3 py-2 text-sm text-ink">
-          {notice}
-        </div>
-      )}
-      <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <section className="min-w-0 overflow-hidden rounded-sm border border-border-subtle bg-surface-card">
-          <header className="flex items-center justify-between border-b border-border-subtle px-4 py-3 md:px-5">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                aria-label="Previous month"
-                onClick={() => changeMonth(-1)}
-                className="rounded-sm p-1.5 text-muted hover:bg-surface-bg hover:text-ink"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <h2 className="min-w-36 text-center font-serif text-lg font-semibold text-ink">
-                {monthNames[month.getMonth()]} {month.getFullYear()}
-              </h2>
-              <button
-                type="button"
-                aria-label="Next month"
-                onClick={() => changeMonth(1)}
-                className="rounded-sm p-1.5 text-muted hover:bg-surface-bg hover:text-ink"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-            {mode === "tutor" && (
-              <button
-                type="button"
-                onClick={() => openCreateForm()}
-                className="inline-flex items-center gap-1.5 rounded-sm bg-brand-primary px-3 py-2 text-xs font-medium text-white hover:bg-brand-primary-hover"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Create slot
-              </button>
-            )}
-          </header>
-          <div className="grid grid-cols-7 border-b border-border-subtle bg-surface-bg">
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+        <div className="lg:col-span-3">
+          <div className="grid grid-cols-7 border-b border-gray-200 text-center text-xs font-semibold leading-6 text-gray-600">
             {weekDays.map((day) => (
-              <div
-                key={day}
-                className="px-1 py-2 text-center text-[10px] font-medium tracking-wide text-muted uppercase md:text-[11px]"
-              >
+              <div key={day} className="py-2">
                 {day}
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-7">
+
+          <div className="grid grid-cols-7 border-l border-t border-gray-200 bg-white">
             {days.map((day) => {
               const key = dateKey(day);
-              const isCurrentMonth = day.getMonth() === month.getMonth();
-              const isSelected = key === selectedDate;
               const dayEvents = eventsByDate[key] ?? [];
+              const isCurrentMonth = day.getMonth() === month.getMonth();
+
               return (
-                <button
+                <div
                   key={key}
-                  type="button"
-                  onClick={() => {
-                    setSelectedDate(key);
-                    setSelectedEvent(null);
-                    if (mode === "tutor") openCreateForm(key);
-                  }}
-                  className={`min-h-24 overflow-hidden border-b border-r border-border-subtle p-1.5 text-left transition last:border-r-0 md:min-h-28 md:p-2 ${isCurrentMonth ? "bg-surface-card" : "bg-surface-bg/60"} ${isSelected ? "ring-2 ring-inset ring-brand-primary" : "hover:bg-brand-primary/5"}`}
+                  onClick={() => openCreateForm(key)}
+                  className={`min-h-[110px] border-b border-r border-gray-200 p-1.5 transition ${
+                    isCurrentMonth ? "bg-white" : "bg-gray-50 text-gray-400"
+                  } ${selectedDate === key ? "ring-2 ring-inset ring-indigo-600" : ""}`}
                 >
-                  <span
-                    className={`mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs ${key === "2026-08-21" ? "bg-brand-primary font-semibold text-white" : isCurrentMonth ? "text-ink" : "text-muted"}`}
-                  >
-                    {day.getDate()}
-                  </span>
-                  <span className="flex flex-col gap-1">
-                    {dayEvents.slice(0, 3).map((event) => (
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`text-xs font-semibold ${
+                        isCurrentMonth ? "text-gray-900" : "text-gray-400"
+                      }`}
+                    >
+                      {day.getDate()}
+                    </span>
+                    {mode === "tutor" && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openCreateForm(key);
+                        }}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="mt-1 flex flex-col gap-1">
+                    {dayEvents.map((event) => (
                       <EventPill
                         key={event.id}
                         event={event}
                         onClick={() => setSelectedEvent(event)}
                       />
                     ))}
-                  </span>
-                  {dayEvents.length > 3 && (
-                    <span className="mt-1 block text-[10px] text-muted">
-                      +{dayEvents.length - 3} more
-                    </span>
-                  )}
-                </button>
+                  </div>
+                </div>
               );
             })}
           </div>
-        </section>
-        <aside className="flex flex-col gap-4">
-          {mode === "tutor" ? (
-            <form
-              onSubmit={createEvent}
-              className="rounded-sm border border-border-subtle bg-surface-card p-4"
-            >
-              <div className="flex items-center justify-between">
-                <h2 className="font-serif text-lg font-semibold text-ink">
-                  New availability
-                </h2>
-                <CalendarPlus className="h-5 w-5 text-burgundy" />
+        </div>
+
+        <div className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-4">
+          {selectedEvent ? (
+            <div>
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <h3 className="font-semibold text-gray-900">Slot Details</h3>
+                <button
+                  type="button"
+                  onClick={() => setSelectedEvent(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-              <p className="mt-1 text-xs text-muted">
-                Publish a slot students can book.
-              </p>
-              <div className="mt-4 flex flex-col gap-3">
-                <label className="text-xs font-medium text-ink">
-                  What can you help with?
-                  <input
-                    value={form.title}
-                    onChange={(event) =>
-                      updateForm("title", event.target.value)
-                    }
-                    placeholder="e.g. Integration practice"
-                    className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-bg px-3 py-2 text-sm outline-none focus:border-brand-primary"
-                  />
-                </label>
-                <label className="text-xs font-medium text-ink">
-                  Course
-                  <input
-                    value={form.course}
-                    onChange={(event) =>
-                      updateForm("course", event.target.value)
-                    }
-                    className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-bg px-3 py-2 text-sm outline-none focus:border-brand-primary"
-                  />
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="text-xs font-medium text-ink">
-                    Date
-                    <input
-                      type="date"
-                      value={form.date}
-                      onChange={(event) =>
-                        updateForm("date", event.target.value)
-                      }
-                      className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-bg px-2 py-2 text-sm outline-none focus:border-brand-primary"
-                    />
-                  </label>
-                  <label className="text-xs font-medium text-ink">
-                    Start
-                    <input
-                      type="time"
-                      value={form.start}
-                      onChange={(event) =>
-                        updateForm("start", event.target.value)
-                      }
-                      className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-bg px-2 py-2 text-sm outline-none focus:border-brand-primary"
-                    />
-                  </label>
+
+              <div className="mt-4 flex flex-col gap-3 text-sm">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <UserRound className="h-4 w-4" />
+                  <span>{selectedEvent.tutor}</span>
                 </div>
-                <label className="text-xs font-medium text-ink">
-                  End time
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Clock3 className="h-4 w-4" />
+                  <span>
+                    {selectedEvent.start} - {selectedEvent.end}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <MapPin className="h-4 w-4" />
+                  <span>{selectedEvent.mode}</span>
+                </div>
+                {selectedEvent.note && (
+                  <p className="mt-2 rounded-md bg-gray-50 p-2 text-xs text-gray-500">
+                    {selectedEvent.note}
+                  </p>
+                )}
+
+                {mode === "student" && selectedEvent.status === "available" && (
+                  <>
+                    <label className="mt-3 text-xs font-medium text-gray-700">
+                      Subject
+                      <select
+                        value={selectedSubjectId}
+                        onChange={(event) => setSelectedSubjectId(event.target.value)}
+                        className="mt-1 w-full rounded-md border border-gray-300 bg-white px-2.5 py-2 text-xs shadow-sm focus:border-indigo-500 focus:outline-none"
+                      >
+                        <option value="">Select a subject</option>
+                        {subjects.map((subject) => (
+                          <option key={subject.id} value={subject.id}>{subject.name}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={bookEvent}
+                      className="mt-4 w-full rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+                    >
+                      Book this slot
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : mode === "tutor" ? (
+            <form onSubmit={createEvent} className="flex flex-col gap-3">
+              <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
+                <CalendarPlus className="h-4 w-4 text-indigo-600" />
+                <h3 className="font-semibold text-gray-900">
+                  Add Availability
+                </h3>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-gray-700">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={form.date}
+                  onChange={(e) => updateForm("date", e.target.value)}
+                  className="mt-1 w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-xs shadow-sm focus:border-indigo-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs font-medium text-gray-700">
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    value={form.start}
+                    onChange={(e) => updateForm("start", e.target.value)}
+                    className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs shadow-sm focus:border-indigo-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-700">
+                    End Time
+                  </label>
                   <input
                     type="time"
                     value={form.end}
-                    onChange={(event) => updateForm("end", event.target.value)}
-                    className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-bg px-3 py-2 text-sm outline-none focus:border-brand-primary"
+                    onChange={(e) => updateForm("end", e.target.value)}
+                    className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs shadow-sm focus:border-indigo-500 focus:outline-none"
                   />
-                </label>
-                <label className="text-xs font-medium text-ink">
-                  Format
-                  <input
-                    value={form.mode}
-                    onChange={(event) => updateForm("mode", event.target.value)}
-                    className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-bg px-3 py-2 text-sm outline-none focus:border-brand-primary"
-                  />
-                </label>
-                <label className="text-xs font-medium text-ink">
-                  Note{" "}
-                  <span className="font-normal text-muted">(optional)</span>
-                  <textarea
-                    value={form.note}
-                    onChange={(event) => updateForm("note", event.target.value)}
-                    rows={2}
-                    className="mt-1 w-full resize-none rounded-sm border border-border-subtle bg-surface-bg px-3 py-2 text-sm outline-none focus:border-brand-primary"
-                  />
-                </label>
-                <button
-                  type="submit"
-                  className="mt-1 inline-flex items-center justify-center gap-2 rounded-sm bg-brand-primary px-3 py-2.5 text-sm font-medium text-white hover:bg-brand-primary-hover"
-                >
-                  <Plus className="h-4 w-4" />
-                  Publish availability
-                </button>
+                </div>
               </div>
+
+              <div>
+                <label className="text-xs font-medium text-gray-700">
+                  Notes
+                </label>
+                <textarea
+                  rows={2}
+                  value={form.note}
+                  onChange={(e) => updateForm("note", e.target.value)}
+                  placeholder="Optional details..."
+                  className="mt-1 w-full rounded-md border border-gray-300 p-2 text-xs shadow-sm focus:border-indigo-500 focus:outline-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="mt-2 w-full rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500"
+              >
+                Publish Slot
+              </button>
             </form>
           ) : (
-            <section className="rounded-sm border border-border-subtle bg-surface-card p-4">
-              <h2 className="font-serif text-lg font-semibold text-ink">
-                How booking works
-              </h2>
-              <ol className="mt-3 space-y-3 text-sm text-muted">
-                <li className="flex gap-2">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-primary text-[10px] text-white">
-                    1
-                  </span>
-                  Choose an open slot on the calendar.
-                </li>
-                <li className="flex gap-2">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-primary text-[10px] text-white">
-                    2
-                  </span>
-                  Review the tutor, format, and note.
-                </li>
-                <li className="flex gap-2">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-primary text-[10px] text-white">
-                    3
-                  </span>
-                  Book it and find it in Sessions.
-                </li>
-              </ol>
-            </section>
+            <div className="py-8 text-center text-xs text-gray-500">
+              Select an available slot on the calendar to view details and book
+              a session.
+            </div>
           )}
-          <section className="rounded-sm border border-border-subtle bg-surface-card p-4">
-            <h2 className="font-serif text-base font-semibold text-ink">
-              Legend
-            </h2>
-            <div className="mt-3 space-y-2 text-xs text-muted">
-              <p>
-                <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-olive" />
-                Available to book
-              </p>
-              <p>
-                <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-brand-primary" />
-                Booked session
-              </p>
-              <p>
-                <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-burgundy" />
-                Your availability
-              </p>
-            </div>
-          </section>
-        </aside>
-      </div>
-      {selectedEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/25 p-4">
-          <div className="w-full max-w-md rounded-sm border border-border-subtle bg-surface-card p-5 shadow-warm">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p
-                  className={`text-xs font-medium uppercase ${toneClasses[selectedEvent.tone].split(" ").pop()}`}
-                >
-                  {selectedEvent.course}
-                </p>
-                <h2 className="mt-1 font-serif text-xl font-semibold text-ink">
-                  {selectedEvent.title}
-                </h2>
-              </div>
-              <button
-                type="button"
-                aria-label="Close event details"
-                onClick={() => setSelectedEvent(null)}
-                className="rounded-sm p-1 text-muted hover:bg-surface-bg hover:text-ink"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="mt-4 space-y-3 border-t border-border-subtle pt-4 text-sm text-muted">
-              <p className="flex items-center gap-2">
-                <Clock3 className="h-4 w-4" />
-                {selectedEvent.date} · {selectedEvent.start}–{selectedEvent.end}
-              </p>
-              <p className="flex items-center gap-2">
-                <UserRound className="h-4 w-4" />
-                {selectedEvent.tutor}
-              </p>
-              <p className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                {selectedEvent.mode}
-              </p>
-              <p className="text-ink">{selectedEvent.note}</p>
-            </div>
-            {mode === "student" && selectedEvent.status === "available" && (
-              <button
-                type="button"
-                onClick={bookEvent}
-                className="mt-5 w-full rounded-sm bg-brand-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-primary-hover"
-              >
-                Book this slot
-              </button>
-            )}
-            {selectedEvent.status === "booked" && (
-              <p className="mt-5 border-l-2 border-brand-primary bg-brand-primary/10 px-3 py-2 text-sm text-ink">
-                This slot is already booked.
-              </p>
-            )}
-          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

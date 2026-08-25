@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from "react";
 import type { User } from "../types";
-import { api } from "../services/api/axios";
+import { api } from "../api/axios";
 import { AuthContext } from "./AuthContext";
+
+const activeRoleKey = (userId: string) => `tutorium-active-role:${userId}`;
+
+function roleForUser(user: User): "student" | "tutor" {
+  const storedRole = localStorage.getItem(activeRoleKey(user.id));
+
+  if (storedRole === "tutor" && user.isTutor) return "tutor";
+  if (storedRole === "student" && user.isStudent) return "student";
+  if (user.isTutor && !user.isStudent) return "tutor";
+  return "student";
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -11,6 +22,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.getItem("token"),
   );
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [activeRole, setActiveRoleState] = useState<"student" | "tutor">(
+    localStorage.getItem("tutorium-active-role") === "tutor" ? "tutor" : "student",
+  );
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -22,6 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           const response = await api.get("/auth/me");
           setUser(response.data.user);
           setToken(storedToken);
+          setActiveRoleState(roleForUser(response.data.user));
         } catch {
           // Invalid or expired token
           localStorage.removeItem("token");
@@ -41,16 +56,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.setItem("token", newToken);
     setToken(newToken);
     setUser(newUser);
+    setActiveRoleState(roleForUser(newUser));
   };
 
   const logout = () => {
     localStorage.removeItem("token");
     setToken(null);
     setUser(null);
+    setActiveRoleState("student");
+  };
+
+  const setActiveRole = (role: "student" | "tutor") => {
+    setActiveRoleState(role);
+    if (user) {
+      localStorage.setItem(activeRoleKey(user.id), role);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, activeRole, setActiveRole }}>
       {children}
     </AuthContext.Provider>
   );
