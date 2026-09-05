@@ -10,3 +10,4 @@ export * from "./calendar";
 export * from "./subject";
 export * from "./availabilitySlot";
 export * from "./booking";
+export * from "./messages";

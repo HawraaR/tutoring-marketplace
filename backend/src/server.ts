@@ -11,6 +11,7 @@ import tutorRoutes from "./routes/tutorRoutes";
 import subjectRoutes from "./routes/subjectRoutes";
 import bookingRoutes from "./routes/bookingRoutes";
 import availabilityRoutes from "./routes/availabilityRoutes";
+import messageRoutes from "./routes/messageRoutes";
 
 
 const app = express();
@@ -31,6 +32,7 @@ app.use("/api/tutors", tutorRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/subjects", subjectRoutes);
+app.use("/api", messageRoutes);
 
 // Mount AFTER all app.use() routes
 app.use((err: any, req: any, res: any, next: any) => {

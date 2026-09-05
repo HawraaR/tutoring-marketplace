@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { firstNameFromEmail, initialsFromEmail } from "../../lib/displayName";
+import { getConversations } from "../../api/messageAPI";
 
 const studentNavItems = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard, ready: true },
@@ -45,9 +47,36 @@ export function Sidebar({
   onToggle,
 }: SidebarProps) {
   const { user, logout, activeRole, setActiveRole } = useAuth();
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const name = firstNameFromEmail(user?.email);
   const hasBothRoles = Boolean(user?.isStudent && user?.isTutor);
   const navItems = activeRole === "tutor" ? tutorNavItems : studentNavItems;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const refreshUnreadMessages = async () => {
+      if (!user?.id) return;
+      try {
+        const conversations = await getConversations();
+        if (isMounted) {
+          setUnreadMessages(
+            conversations.reduce((total, conversation) => total + conversation.unreadCount, 0),
+          );
+        }
+      } catch {
+        // The Messages page displays request errors; keep the sidebar quiet.
+      }
+    };
+
+    void refreshUnreadMessages();
+    const interval = window.setInterval(() => void refreshUnreadMessages(), 5000);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(interval);
+    };
+  }, [user?.id]);
 
   const switchRole = (role: "student" | "tutor") => {
     setActiveRole(role);
@@ -139,7 +168,7 @@ export function Sidebar({
                 }
               >
                 <Icon className="h-4 w-4 shrink-0" strokeWidth={1.5} />
-                {!isCollapsed && label}
+                {!isCollapsed && <span className="flex min-w-0 flex-1 items-center justify-between gap-2"><span>{label}</span>{label === "Messages" && unreadMessages > 0 && <span className="min-w-5 rounded-full bg-burgundy px-1.5 py-0.5 text-center text-[10px] font-semibold leading-none text-white">{unreadMessages}</span>}</span>}
               </NavLink>
             ) : (
               <span

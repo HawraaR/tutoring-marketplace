@@ -8,6 +8,7 @@ export type EventStatus = "available" | "booked";
 // Frontend Display Model (Parsed from backend availability/bookings for grid render)
 export interface CalendarEvent {
   id: string;
+  tutorId?: string;
   date: string;
   start: string;
   end: string;
@@ -29,4 +30,9 @@ export interface AvailabilityForm {
   end: string;
   mode: string;
   note: string;
+}
+
+export interface CalendarProps {
+  initialDate?: Date | string;
+  className?: string;
 }

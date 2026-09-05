@@ -1,5 +1,5 @@
 import React from "react";
-import { cn } from "../../lib/utils";
+import { cn } from "../../lib/utils/utils";
 
 export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
