@@ -2,7 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
 interface TokenPayload {
-  id: string; // or number, depending on your Prisma/DB User id type
+  userId?: string;
+  id?: string;
   email: string;
 }
 
@@ -25,11 +26,16 @@ export const authenticateToken = (
     // 3. Verify JWT token signature against your secret
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || "supersecretkey",
+      process.env.JWT_SECRET || "fallback_secret",
     ) as TokenPayload;
 
     // 4. Attach decoded payload to req.user for downstream handlers
-    (req as any).user = decoded;
+    const userId = decoded.userId || decoded.id;
+    if (!userId) {
+      return res.status(403).json({ error: "Invalid token payload" });
+    }
+
+    (req as any).user = { ...decoded, userId };
     console.log("👉 2. TOKEN DECODED SUCCESSFULLY:", decoded);
 
     // 5. Proceed to the controller (getMe)

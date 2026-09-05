@@ -8,9 +8,11 @@ export interface AvailabilitySlot {
   createdAt?: string;
   updatedAt?: string;
   tutor?: {
-    id: string;
-    name: string;
-    email: string;
+    id?: string;
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
   };
 }
 

@@ -80,6 +80,32 @@ export const getUserBookings = async (req: Request, res: Response) => {
   }
 };
 
+// Get Bookings for a Specific Tutor (For the Tutor View)
+export const getTutorBookings = async (req: Request, res: Response) => {
+  try {
+    const tutorId = (req as any).user.userId;
+
+    const bookings = await prisma.booking.findMany({
+      where: { tutorId },
+      include: {
+        student: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+        tutor: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+        subject: true,
+      },
+      orderBy: { startTime: "desc" },
+    });
+
+    return res.status(200).json(bookings);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to fetch tutor bookings." });
+  }
+};
+
+
 // Update Booking Status (Confirm / Cancel / Complete)
 export const updateBookingStatus = async (
   req: Request<{ bookingId: string }>,

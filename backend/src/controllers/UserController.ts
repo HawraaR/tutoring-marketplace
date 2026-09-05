@@ -57,3 +57,30 @@ export const getUsers = async (_req: Request, res: Response) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+export const getMessageContacts = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const users = await prisma.user.findMany({
+      where: { id: { not: userId } },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        isStudent: true,
+        isTutor: true,
+      },
+      orderBy: [{ firstName: "asc" }, { lastName: "asc" }, { email: "asc" }],
+    });
+    return res.status(200).json(users.map((user) => ({
+      ...user,
+      displayName:
+        [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+        user.email.split("@")[0].split(/[._-]+/).filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" "),
+    })));
+  } catch (error) {
+    console.error("Error fetching message contacts:", error);
+    return res.status(500).json({ error: "Failed to fetch message contacts." });
+  }
+};
