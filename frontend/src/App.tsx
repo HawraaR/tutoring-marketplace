@@ -6,12 +6,13 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import { AuthForm } from "./components/AuthForm";
 import { Dashboard } from "./pages/Dashboard";
 import { TutorD } from "./pages/TutorDashboard";
-import { AdminD } from "./pages/AdminDashboard";
 import { Sessions } from "./pages/Sessions";
 import { AppLayout, AuthLayout } from "./layouts";
 import { Messages } from "./pages/Messages";
 import { Calendar } from "./pages/Calendar";
 import LandingPage from "./pages/LandingPage2";
+import Directory from "./pages/Directory2";
+import AdminD from "./pages/AdminDashboard";
 
 const DashboardRedirect: React.FC = () => {
   const { user, activeRole } = useAuth();
@@ -47,6 +48,7 @@ export const App: React.FC = () => {
               <Route path="/sessions" element={<Sessions />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/calendar" element={<Calendar/>}/>
+              <Route path="/directory" element={<Directory/>}/>
             </Route>
           </Route>
           <Route

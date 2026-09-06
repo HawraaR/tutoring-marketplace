@@ -5,7 +5,7 @@ import express from "express";
 import cors from "cors";
 
 // Routes
-import userRoutes from "./routes/userRoutes";
+import userRoutes from "./routes/UserRoutes";
 import authRoutes from "./routes/authRoutes";
 import tutorRoutes from "./routes/tutorRoutes";
 import subjectRoutes from "./routes/subjectRoutes";

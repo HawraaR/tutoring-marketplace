@@ -54,3 +54,27 @@ export const applyAsTutor = async (req: Request, res: Response) => {
     return res.status(500).json({ error: "Failed to create tutor profile" });
   }
 };
+
+// GET /api/tutors  — public, no auth middleware
+export const getTutors = async (_req: Request, res: Response) => {
+  try {
+    const tutors = await prisma.user.findMany({
+      where: {
+        isTutor: true,
+        tutorProfile: { verificationStatus: "APPROVED" },
+      },
+      include: {
+        tutorProfile: true,
+        tutorSubjects: { include: { subject: true } },
+        availability: {
+          where: { isBooked: false, startTime: { gte: new Date() } },
+          orderBy: { startTime: "asc" },
+        },
+      },
+    });
+    res.json(tutors); // Date fields auto-serialize to ISO strings → matches TutorListItem
+  } catch (error) {
+    console.error("GET /api/tutors failed:", error);
+    res.status(500).json({ message: "Failed to fetch tutors" });
+  }
+};
