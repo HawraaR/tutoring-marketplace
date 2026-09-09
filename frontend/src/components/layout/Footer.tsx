@@ -39,17 +39,7 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Universities */}
-          <div>
-            <h3 className="font-semibold mb-4">Universities</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link to="#" className="hover:text-primary transition-colors">AUB Portal</Link></li>
-              <li><Link to="#" className="hover:text-primary transition-colors">LAU Portal</Link></li>
-              <li><Link to="#" className="hover:text-primary transition-colors">USJ Portal</Link></li>
-              <li><Link to="#" className="hover:text-primary transition-colors">BAU Portal</Link></li>
-              <li><Link to="#" className="hover:text-primary transition-colors">NDU Portal</Link></li>
-            </ul>
-          </div>
+          
 
           {/* Platform */}
           <div>
