@@ -21,7 +21,7 @@ const studentNavItems = [
   { to: "/sessions", label: "Sessions", icon: Calendar, ready: true },
   { to: "/messages", label: "Messages", icon: MessageSquare, ready: true },
   { to: "/calendar", label: "Calendar", icon: Calendar, ready: true },
-  { to: "#", label: "Directory", icon: Compass, ready: false },
+  { to: "/directory", label: "Directory", icon: Compass, ready: true },
 ] as const;
 
 const tutorNavItems = [

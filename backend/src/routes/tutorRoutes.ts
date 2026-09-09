@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { applyAsTutor } from "../controllers/tutorController";
+import { applyAsTutor, getTutors} from "../controllers/tutorController";
 import { authenticateToken } from "../middlewares/auth"; // Your JWT protection middleware
 
 const router = Router();
@@ -7,4 +7,5 @@ const router = Router();
 // POST /api/tutors/apply (Protected)
 router.post("/apply", authenticateToken, applyAsTutor);
 
+router.get("/", getTutors); 
 export default router;
