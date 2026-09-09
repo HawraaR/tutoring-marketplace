@@ -5,7 +5,7 @@ const accent: Record<string, string> = {
 };
 
 interface CourseLabelProps {
-  code: string;
+  code?: string;
   title: string;
   tone: keyof typeof accent;
 }
@@ -13,7 +13,7 @@ interface CourseLabelProps {
 export function CourseLabel({ code, title, tone }: CourseLabelProps) {
   return (
     <span className={`inline-flex items-baseline gap-2 border-l-[3px] py-0.5 pr-2 pl-2 ${accent[tone]}`}>
-      <span className="font-mono text-[11px] font-semibold tracking-wide">{code}</span>
+      {code && <span className="text-[11px] font-semibold text-ink">{code}</span>}
       <span className="text-xs font-medium text-ink">{title}</span>
     </span>
   );

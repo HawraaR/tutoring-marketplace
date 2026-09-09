@@ -7,6 +7,8 @@ import { AuthForm } from "./components/AuthForm";
 import { Dashboard } from "./pages/Dashboard";
 import { TutorD } from "./pages/TutorDashboard";
 import { Sessions } from "./pages/Sessions";
+import { AdminD } from "./pages/AdminDashboard";
+import {SessionPage} from "./pages/SessionPage"
 import { AppLayout, AuthLayout } from "./layouts";
 import { Messages } from "./pages/Messages";
 import { Calendar } from "./pages/Calendar";
@@ -45,7 +47,7 @@ export const App: React.FC = () => {
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<DashboardRedirect />} />
-              <Route path="/sessions" element={<Sessions />} />
+              <Route path="/sessions" element={<SessionPage />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/calendar" element={<Calendar/>}/>
               <Route path="/directory" element={<Directory/>}/>
