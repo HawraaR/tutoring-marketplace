@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Menu,
@@ -12,7 +12,11 @@ import {
   X,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { useOutletContext, useSearchParams } from "react-router-dom";
+import {
+  useNavigate,
+  useOutletContext,
+  useSearchParams,
+} from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { firstNameFromEmail } from "../lib/displayName";
 import {
@@ -64,7 +68,9 @@ function conversationPeer(conversation: Conversation, userId?: string) {
 }
 
 function formatTime(value: string) {
-  return new Date(value).toLocaleTimeString([], {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
   });
@@ -104,6 +110,7 @@ function Avatar({
 export function Messages() {
   const { onMenuClick } = useOutletContext<{ onMenuClick: () => void }>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedId, setSelectedId] = useState<string>();
@@ -112,10 +119,13 @@ export function Messages() {
   const [draft, setDraft] = useState("");
   const [showThread, setShowThread] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [showNewMessage, setShowNewMessage] = useState(false);
   const [contacts, setContacts] = useState<MessageContact[]>([]);
   const [contactSearch, setContactSearch] = useState("");
   const [contactsLoading, setContactsLoading] = useState(false);
+  const [sending, setSending] = useState(false);
+
   const requestedConversationId = searchParams.get("conversationId");
   const currentUser = firstNameFromEmail(user?.email);
   const selectedConversation = conversations.find(
@@ -124,6 +134,20 @@ export function Messages() {
   const peer = selectedConversation
     ? conversationPeer(selectedConversation, user?.id)
     : undefined;
+
+  // ── Refs for race-condition & overlap prevention ──────────────────────────
+  const conversationsRequestRef = useRef(0);
+  const messagesRequestRef = useRef(0);
+  const isPollingRef = useRef(false);
+  const isSendingRef = useRef(false);
+  const selectedIdRef = useRef<string | undefined>(undefined);
+  const lastMessagesLoadRef = useRef<Record<string, number>>({});
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Keep selectedIdRef in sync
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
 
   const filteredConversations = useMemo(
     () =>
@@ -137,42 +161,29 @@ export function Messages() {
     [conversations, search, user?.id],
   );
 
-  const filteredContacts = contacts.filter((contact) =>
-    `${contactName(contact)} ${contact.email}`
-      .toLowerCase()
-      .includes(contactSearch.toLowerCase()),
+  const filteredContacts = useMemo(
+    () =>
+      contacts.filter((contact) =>
+        `${contactName(contact)} ${contact.email}`
+          .toLowerCase()
+          .includes(contactSearch.toLowerCase()),
+      ),
+    [contacts, contactSearch],
   );
 
-  const loadConversations = async () => {
-    try {
-      const result = await getConversations();
-      setConversations(result);
-      const requested =
-        requestedConversationId &&
-        result.some(({ id }) => id === requestedConversationId)
-          ? requestedConversationId
-          : undefined;
-      setSelectedId(
-        (current) =>
-          requested ||
-          (current && result.some(({ id }) => id === current)
-            ? current
-            : undefined),
-      );
-      if (requested) setShowThread(true);
-    } catch (error) {
-      console.error(error);
-      toast.error("Could not load conversations.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadMessages = async (conversationId: string) => {
+  // ── Data loading with race-condition guards ───────────────────────────────
+  const loadMessages = useCallback(async (conversationId: string) => {
+    const requestId = ++messagesRequestRef.current;
+    lastMessagesLoadRef.current[conversationId] = Date.now();
+    setMessagesLoading(true);
     try {
       const result = await getMessages(conversationId);
+      if (requestId !== messagesRequestRef.current) return; // stale response
       setMessages(result);
-      await markConversationRead(conversationId);
+      // Fire-and-forget mark-as-read (never blocks message rendering)
+      markConversationRead(conversationId).catch((error) => {
+        console.error("Failed to mark conversation as read:", error);
+      });
       setConversations((items) =>
         items.map((item) =>
           item.id === conversationId ? { ...item, unreadCount: 0 } : item,
@@ -181,26 +192,114 @@ export function Messages() {
     } catch (error) {
       console.error(error);
       toast.error("Could not load messages.");
+    } finally {
+      if (requestId === messagesRequestRef.current) {
+        setMessagesLoading(false);
+      }
     }
-  };
+  }, []);
 
+  const loadConversations = useCallback(async () => {
+    const requestId = ++conversationsRequestRef.current;
+    try {
+      const result = await getConversations();
+      if (requestId !== conversationsRequestRef.current) return; // stale response
+      setConversations(result);
+
+      // If the selected conversation has a newer updatedAt than the last
+      // message load, refresh its messages (handles incoming messages via poll).
+      const currentSelectedId = selectedIdRef.current;
+      if (currentSelectedId) {
+        const selected = result.find((c) => c.id === currentSelectedId);
+        if (selected) {
+          const lastLoad = lastMessagesLoadRef.current[currentSelectedId] ?? 0;
+          const updatedAtTime = new Date(selected.updatedAt).getTime();
+          if (updatedAtTime > lastLoad) {
+            void loadMessages(currentSelectedId);
+          }
+        }
+      }
+
+      const requested =
+        requestedConversationId &&
+        result.some(({ id }) => id === requestedConversationId)
+          ? requestedConversationId
+          : undefined;
+      setSelectedId((current) => {
+        const next =
+          requested ||
+          (current && result.some(({ id }) => id === current)
+            ? current
+            : undefined);
+        return next;
+      });
+      if (requested) setShowThread(true);
+    } catch (error) {
+      console.error(error);
+      // Handle 401 by redirecting to login
+      if ((error as { response?: { status?: number } })?.response?.status === 401) {
+        navigate("/login", { replace: true });
+        return;
+      }
+      toast.error("Could not load conversations.");
+    } finally {
+      if (requestId === conversationsRequestRef.current) {
+        setLoading(false);
+      }
+    }
+  }, [requestedConversationId, loadMessages, navigate]);
+
+  // ── Effects ───────────────────────────────────────────────────────────────
+  // Initial load + polling with overlap prevention
   useEffect(() => {
-    void loadConversations();
-    const interval = window.setInterval(() => void loadConversations(), 5000);
-    return () => window.clearInterval(interval);
-  }, [requestedConversationId]);
+    const initialTimer = window.setTimeout(() => {
+      void loadConversations();
+    }, 0);
+    const interval = window.setInterval(() => {
+      if (isPollingRef.current) return; // skip if a poll is already in-flight
+      isPollingRef.current = true;
+      void loadConversations().finally(() => {
+        isPollingRef.current = false;
+      });
+    }, 15000);
+    return () => {
+      window.clearTimeout(initialTimer);
+      window.clearInterval(interval);
+      conversationsRequestRef.current++; // invalidate in-flight requests
+    };
+  }, [loadConversations]);
 
+  // Load messages when selected conversation changes
   useEffect(() => {
-    if (selectedId) void loadMessages(selectedId);
-  }, [selectedId]);
+    if (selectedId) {
+      const timer = window.setTimeout(() => {
+        void loadMessages(selectedId);
+      }, 0);
+      return () => {
+        window.clearTimeout(timer);
+        messagesRequestRef.current++; // invalidate in-flight requests
+      };
+    }
+  }, [selectedId, loadMessages]);
 
-  const selectConversation = (id: string) => {
-    setSelectedId(id);
-    setShowThread(true);
-    setSearchParams({ conversationId: id }, { replace: true });
-  };
+  // Auto-scroll to bottom on messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  const openNewMessage = async () => {
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const selectConversation = useCallback(
+    (id: string) => {
+      setSelectedId(id);
+      setShowThread(true);
+      setDraft("");
+      setSearchParams({ conversationId: id }, { replace: true });
+    },
+    [setSearchParams],
+  );
+
+  const openNewMessage = useCallback(async () => {
+    if (contactsLoading) return; // prevent duplicate opens
     setShowNewMessage(true);
     setContactSearch("");
     setContactsLoading(true);
@@ -212,32 +311,71 @@ export function Messages() {
     } finally {
       setContactsLoading(false);
     }
-  };
+  }, [contactsLoading]);
 
-  const startConversation = async (participantId: string) => {
-    try {
-      const conversation = await createConversation(participantId);
-      setShowNewMessage(false);
-      selectConversation(conversation.id);
-    } catch (error) {
-      console.error(error);
-      toast.error("Could not start conversation.");
-    }
-  };
+  const startConversation = useCallback(
+    async (participantId: string) => {
+      try {
+        const conversation = await createConversation(participantId);
+        setShowNewMessage(false);
+        // Add to local list if not already present (avoids full refetch)
+        setConversations((items) => {
+          if (items.some((item) => item.id === conversation.id)) return items;
+          const newConversation: Conversation = {
+            id: conversation.id,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            participants: conversation.participants,
+            messages: [],
+            unreadCount: 0,
+          };
+          return [newConversation, ...items];
+        });
+        selectConversation(conversation.id);
+      } catch (error) {
+        console.error(error);
+        toast.error("Could not start conversation.");
+      }
+    },
+    [selectConversation],
+  );
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     const text = draft.trim();
-    if (!text || !selectedId) return;
+    if (!text || !selectedId || isSendingRef.current) return;
+    isSendingRef.current = true;
+    setSending(true);
     try {
       const message = await sendMessage(selectedId, text);
       setMessages((items) => [...items, message]);
       setDraft("");
-      void loadConversations();
+      // Update conversation list locally (no full refetch needed)
+      setConversations((items) =>
+        items.map((item) =>
+          item.id === selectedId
+            ? {
+                ...item,
+                updatedAt: new Date().toISOString(),
+                messages: [
+                  {
+                    id: message.id,
+                    senderId: message.senderId,
+                    text: message.text,
+                    createdAt: message.createdAt,
+                  },
+                ],
+              }
+            : item,
+        ),
+      );
     } catch (error) {
       console.error(error);
       toast.error("Could not send message.");
+    } finally {
+      isSendingRef.current = false;
+      setSending(false);
     }
-  };
+  }, [draft, selectedId]);
 
   return (
     <div className="mx-auto flex h-full min-h-0 max-w-7xl flex-col">
@@ -398,28 +536,39 @@ export function Messages() {
                   Conversation
                   <span className="h-px flex-1 bg-border-subtle" />
                 </div>
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.senderId === user?.id ? "justify-end" : "justify-start"}`}
-                  >
+                {messagesLoading && messages.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted">
+                    Loading messages...
+                  </p>
+                ) : messages.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted">
+                    No messages yet. Say hello!
+                  </p>
+                ) : (
+                  messages.map((message) => (
                     <div
-                      className={`flex max-w-[min(78%,420px)] flex-col ${message.senderId === user?.id ? "items-end" : "items-start"}`}
+                      key={message.id}
+                      className={`flex ${message.senderId === user?.id ? "justify-end" : "justify-start"}`}
                     >
                       <div
-                        className={`rounded-sm px-3 py-1.5 text-sm leading-relaxed ${message.senderId === user?.id ? "bg-brand-primary text-white" : "border border-border-subtle bg-surface-card text-ink"}`}
+                        className={`flex max-w-[min(78%,420px)] flex-col ${message.senderId === user?.id ? "items-end" : "items-start"}`}
                       >
-                        {message.text}
+                        <div
+                          className={`rounded-sm px-3 py-1.5 text-sm leading-relaxed ${message.senderId === user?.id ? "bg-brand-primary text-white" : "border border-border-subtle bg-surface-card text-ink"}`}
+                        >
+                          {message.text}
+                        </div>
+                        <span className="mt-0 px-1 text-[10px] text-muted">
+                          {message.senderId === user?.id
+                            ? currentUser
+                            : displayName(peer)}{" "}
+                          · {formatTime(message.createdAt)}
+                        </span>
                       </div>
-                      <span className="mt-0 px-1 text-[10px] text-muted">
-                        {message.senderId === user?.id
-                          ? currentUser
-                          : displayName(peer)}{" "}
-                        · {formatTime(message.createdAt)}
-                      </span>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
+                <div ref={messagesEndRef} />
               </div>
               <form
                 onSubmit={(event) => {
@@ -452,7 +601,7 @@ export function Messages() {
                   <button
                     type="submit"
                     aria-label="Send message"
-                    disabled={!draft.trim()}
+                    disabled={!draft.trim() || sending}
                     className="mb-0.5 rounded-sm bg-brand-primary p-2 text-white hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <Send className="h-4 w-4" />

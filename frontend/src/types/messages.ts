@@ -37,5 +37,7 @@ export interface Conversation {
 
 export interface CreateConversationResponse {
   id: string;
+  createdAt: string;
+  updatedAt: string;
   participants: ConversationParticipant[];
 }
