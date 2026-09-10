@@ -6,14 +6,13 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import { AuthForm } from "./components/AuthForm";
 import { Dashboard } from "./pages/Dashboard";
 import { TutorD } from "./pages/TutorDashboard";
-import { Sessions } from "./pages/Sessions";
 import  AdminD  from "./pages/AdminDashboard";
 import {SessionPage} from "./pages/SessionPage"
 import { AppLayout, AuthLayout } from "./layouts";
 import { Messages } from "./pages/Messages";
 import { Calendar } from "./pages/Calendar";
 import LandingPage from "./pages/LandingPage2";
-import Directory from "./pages/Directory2";
+import Directory from "./pages/TutorDirectory";
 
 const DashboardRedirect: React.FC = () => {
   const { user, activeRole } = useAuth();

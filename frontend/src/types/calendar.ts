@@ -9,6 +9,8 @@ export type EventStatus = "available" | "booked";
 export interface CalendarEvent {
   id: string;
   tutorId?: string;
+  startTime?: string;
+  endTime?: string;
   date: string;
   start: string;
   end: string;

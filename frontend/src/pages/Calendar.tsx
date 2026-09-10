@@ -104,8 +104,18 @@ const getAvailabilityData = async (
     const localDay = String(startObj.getDate()).padStart(2, "0");
     const localDateStr = `${localYear}-${localMonth}-${localDay}`;
 
+    const tutorObj = slot.tutor;
+    const fullName =
+      tutorObj?.firstName || tutorObj?.lastName
+        ? [tutorObj.firstName, tutorObj.lastName].filter(Boolean).join(" ")
+        : "";
+    const tutorName = fullName || tutorObj?.name || "Tutor";
+
     return {
       id: slot.id,
+      tutorId: slot.tutorId || tutorObj?.id || tutorId,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
       date: localDateStr,
       start: startObj.toLocaleTimeString([], {
         hour: "numeric",
@@ -117,8 +127,8 @@ const getAvailabilityData = async (
         minute: "2-digit",
         hour12: true, // Enables 12-hour format with AM/PM (e.g., "7:00 AM")
       }),
-      title: slot.tutor?.name ?? "Tutoring Session",
-      tutor: slot.tutor?.name ?? "Tutor",
+      title: tutorName !== "Tutor" ? tutorName : "Tutoring Session",
+      tutor: tutorName,
       course: "General",
       mode: "Remote",
       note: "",
@@ -133,6 +143,7 @@ export function Calendar() {
   const mode: CalendarMode = activeRole;
 
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [isBooking, setIsBooking] = useState<boolean>(false);
   const [month, setMonth] = useState<Date>(new Date(2026, 7, 1));
   const [selectedDate, setSelectedDate] = useState<string>("2026-08-22");
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
@@ -242,7 +253,6 @@ export function Calendar() {
 
     try {
       const payload: CreateAvailabilityPayload = {
-        // Removing 'Z' lets the browser treatform.start as LOCAL time before converting to ISO
         startTime: new Date(`${form.date}T${form.start}:00`).toISOString(),
         endTime: new Date(`${form.date}T${form.end}:00`).toISOString(),
       };
@@ -278,20 +288,31 @@ export function Calendar() {
   };
 
   const bookEvent = async (): Promise<void> => {
-    if (!selectedEvent) return;
+    if (!selectedEvent || isBooking) return;
+
+    if (selectedEvent.tutorId && user?.id && selectedEvent.tutorId === user.id) {
+      toast.error("You cannot book your own availability slot.");
+      return;
+    }
+
     if (!selectedSubjectId) {
       toast.error("Select a subject before booking.");
       return;
     }
 
+    setIsBooking(true);
     try {
-      const start24 = convert12to24(selectedEvent.start);
-      const end24 = convert12to24(selectedEvent.end);
+      const startTime = selectedEvent.startTime
+        ? new Date(selectedEvent.startTime).toISOString()
+        : new Date(`${selectedEvent.date}T${convert12to24(selectedEvent.start)}:00`).toISOString();
+      const endTime = selectedEvent.endTime
+        ? new Date(selectedEvent.endTime).toISOString()
+        : new Date(`${selectedEvent.date}T${convert12to24(selectedEvent.end)}:00`).toISOString();
 
       const payload: CreateBookingPayload = {
         subjectId: selectedSubjectId,
-        startTime: new Date(`${selectedEvent.date}T${start24}:00`).toISOString(),
-        endTime: new Date(`${selectedEvent.date}T${end24}:00`).toISOString(),
+        startTime,
+        endTime,
         availabilitySlotId: selectedEvent.id,
         notes: selectedEvent.note,
       };
@@ -306,6 +327,8 @@ export function Calendar() {
       } else {
         toast.error("Operation failed");
       }
+    } finally {
+      setIsBooking(false);
     }
   };
 
@@ -444,28 +467,43 @@ export function Calendar() {
                 )}
 
                 {mode === "student" && selectedEvent.status === "available" && (
-                  <>
-                    <label className="mt-3 text-xs font-medium text-gray-700">
-                      Subject
-                      <select
-                        value={selectedSubjectId}
-                        onChange={(event) => setSelectedSubjectId(event.target.value)}
-                        className="mt-1 w-full rounded-md border border-gray-300 bg-white px-2.5 py-2 text-xs shadow-sm focus:border-indigo-500 focus:outline-none"
+                  selectedEvent.tutorId && user?.id && selectedEvent.tutorId === user.id ? (
+                    <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                      You cannot book your own availability slot.
+                    </div>
+                  ) : (
+                    <>
+                      <label className="mt-3 text-xs font-medium text-gray-700">
+                        Subject
+                        <select
+                          disabled={isBooking}
+                          value={selectedSubjectId}
+                          onChange={(event) => setSelectedSubjectId(event.target.value)}
+                          className="mt-1 w-full rounded-md border border-gray-300 bg-white px-2.5 py-2 text-xs shadow-sm focus:border-indigo-500 focus:outline-none disabled:bg-gray-100 disabled:opacity-60"
+                        >
+                          <option value="">Select a subject</option>
+                          {subjects.map((subject) => (
+                            <option key={subject.id} value={subject.id}>{subject.name}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        disabled={isBooking}
+                        onClick={bookEvent}
+                        className="mt-4 flex w-full items-center justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-indigo-400"
                       >
-                        <option value="">Select a subject</option>
-                        {subjects.map((subject) => (
-                          <option key={subject.id} value={subject.id}>{subject.name}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={bookEvent}
-                      className="mt-4 w-full rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
-                    >
-                      Book this slot
-                    </button>
-                  </>
+                        {isBooking ? (
+                          <span className="inline-flex items-center gap-2">
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                            Booking...
+                          </span>
+                        ) : (
+                          "Book this slot"
+                        )}
+                      </button>
+                    </>
+                  )
                 )}
               </div>
             </div>

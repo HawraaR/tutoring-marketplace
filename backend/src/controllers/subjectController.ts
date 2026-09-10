@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { prisma } from "../../prisma/db";
+import { prisma } from "../db";
 
 // Get all subjects (For dropdowns in UI)
 export const getSubjects = async (_req: Request, res: Response) => {

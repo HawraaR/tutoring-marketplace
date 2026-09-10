@@ -1,18 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Subject } from "../../types/tutor";
-import { TutorsAPI } from "../../api/TutorsAPI";
+import type { Subject } from "../types/tutor";
+import { TutorsAPI } from "../api/TutorsAPI";
 import {
   applyFilters,
   defaultFilters,
   sortTutors,
   type SortKey,
   type TutorFilters,
-} from "../../lib/directory/tutorFilters";
-import { FilterPanel } from "./filterPanel";
-import { TutorCard } from "./tutorCard";
-import { IconChevronLeft, IconChevronRight, IconGrid, IconList } from "./icons";
+} from "../lib/directory/tutorFilters";
+import { FilterPanel } from "../components/directory/filterPanel";
+import { TutorCard } from "../components/directory/tutorCard";
+import { IconChevronLeft, IconChevronRight, IconGrid, IconList } from "../components/directory/icons";
 
 const PAGE_SIZE = 50;
 

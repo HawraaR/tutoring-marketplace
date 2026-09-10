@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { prisma } from "../../prisma/db";
+import { prisma } from "../db";
 
 export const applyAsTutor = async (req: Request, res: Response) => {
   try {
