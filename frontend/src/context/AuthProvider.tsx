@@ -8,30 +8,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-  const initializeAuth = async () => {
+  // Re-fetch the current user from the backend using the stored token.
+  const refreshUser = async () => {
     const storedToken = localStorage.getItem("token");
-    
-    if (storedToken) {
-      try {
-        // Express backend route to verify token
-        const response = await api.get("/auth/me");
-        setUser(response.data.user);
-        setToken(storedToken);
-      } catch{
-        // Invalid or expired token
-        localStorage.removeItem("token");
-        setToken(null);
-        setUser(null);
-      }
+
+    if (!storedToken) {
+      setUser(null);
+      setToken(null);
+      return;
     }
-    
-    // Always stop loading, whether token was found/valid or not!
-    setIsLoading(false);
+
+    try {
+      const response = await api.get("/auth/me");
+      setUser(response.data.user);
+      setToken(storedToken);
+    } catch {
+      // Invalid or expired token
+      localStorage.removeItem("token");
+      setToken(null);
+      setUser(null);
+    }
   };
 
-  initializeAuth();
-}, []);
+  useEffect(() => {
+    refreshUser().finally(() => setIsLoading(false));
+  }, []);
+
   const login = (newToken: string, newUser: User) => {
     localStorage.setItem("token", newToken);
     setToken(newToken);
@@ -45,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

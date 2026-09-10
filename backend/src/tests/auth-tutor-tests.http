@@ -1,62 +1,63 @@
-### Variables
 @baseUrl = http://localhost:5000/api
-@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NDRlZmMxYy0yYzRjLTQ2OGUtODc2NC1iOWE2ZDAzYzk1N2UiLCJlbWFpbCI6InR1dG9yQGV4YW1wbGUuY29tIiwiaWF0IjoxNzg3MzEzNjM1LCJleHAiOjE3ODc5MTg0MzV9.NLbi9CyC03iQv498MmkRdimZst2QBIKVzV2F3Q0fdcc
-
-
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwZDkyMmIyMC1hNjg2LTRlNjQtODQ3NC01MTViNWE5MjIwMjYiLCJlbWFpbCI6InR1dG9ydGVzdEBleGFtcGxlLmNvbSIsImlhdCI6MTc4OTAzMDY1NywiZXhwIjoxNzg5NjM1NDU3fQ.WITpEYA7RaOUvufuI7NRyucFsFokAIoWegOL3CW2NTI
+### 1. Register a dedicated test user (run once; re-run -> 400 "already registered", that's fine)
 # @name register
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
-{
-  "email": "tutor@example.com",
-  "password": "tutor123",
-  "firstName": "Tutor",
-  "lastName": "Smith"
-}
+{ "email": "tutortest@example.com", "password": "test1234" }
 
-###
+### 2. Login  --- RUN THIS FIRST, before every request below ---
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
 
-# 2. GET CURRENT USER PROFILE (Initial Check)
-# Expects: isStudent = true, isTutor = false, studentProfile != null, tutorProfile = null
+{ "email": "mariam.student@example.com", "password": "Password123!" }
+
+### 3. Who am I  (expect 200; first run: isTutor=false, tutorProfile=null)
 GET {{baseUrl}}/auth/me
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{login.response.body.token}}
 
-###
-
-# 3. APPLY TO BECOME A TUTOR
-# Expects: isTutor flips to true, status = "PENDING"
+### 4. Apply as tutor  (expect 201; tutorProfile.verificationStatus = "PENDING")
 POST {{baseUrl}}/tutors/apply
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{login.response.body.token}}
 Content-Type: application/json
 
 {
-  "headline": "Full-Stack Software Engineer & CS Graduate",
-  "bio": "I hold a CS degree and specialize in React, Node.js, and PostgreSQL.",
-  "hourlyRate": 30.00,
-  "subjects": ["React", "TypeScript", "PostgreSQL"],
-  "education": "BSc in Computer Science",
+  "headline": "MSc CS student & React tutor",
+  "bio": "I specialise in React, Node, and PostgreSQL.",
+  "education": "BSc Computer Science",
+  "hourlyRate": 30,
+  "subjects": ["React", "TypeScript"],
   "languages": ["English", "Arabic"],
   "certificates": ["AWS Certified Developer"],
-  "experience": ["2 Years Teaching Assistant"]
+  "experience": ["2 years TA"]
 }
 
-###
+### 5. Get my tutor profile  (expect 200; { profile: {...} })
+GET {{baseUrl}}/tutors/me
+Authorization: Bearer {{login.response.body.token}}
 
-# 4. PREVENT DUPLICATE TUTOR APPLICATION
-# Expects: 400 Bad Request ("Tutor profile already exists")
-POST {{baseUrl}}/tutors/apply
-Authorization: Bearer {{authToken}}
+### 6. Update my tutor profile  (expect 200; hourlyRate 35, headline changed, rest untouched)
+PATCH {{baseUrl}}/tutors/me
+Authorization: Bearer {{login.response.body.token}}
 Content-Type: application/json
 
-{
-  "headline": "Trying to apply again",
-  "bio": "Should fail",
-  "hourlyRate": 25.00
-}
+{ "hourlyRate": 35, "headline": "Senior React & TypeScript tutor" }
 
-###
+### 7. Validation error (expect 400; details -> field "subjects")
+POST {{baseUrl}}/tutors/apply
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
 
-# 5. GET CURRENT USER PROFILE (Final Check)
-# Expects: Both studentProfile AND tutorProfile populated
-GET {{baseUrl}}/auth/me
-Authorization: Bearer {{authToken}}
+{ "headline": "x", "bio": "y", "education": "z", "hourlyRate": 10, "subjects": [] }
+
+### 8. Duplicate apply (expect 400 "Tutor profile already exists for this user")
+POST {{baseUrl}}/tutors/apply
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{ "headline": "again", "bio": "again", "education": "again", "hourlyRate": 20, "subjects": ["Java"] }
+
+### 9. No token (expect 401)
+GET {{baseUrl}}/tutors/me

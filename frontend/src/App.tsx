@@ -7,6 +7,8 @@ import { Dashboard } from "./pages/Dashboard";
 import { Sessions } from "./pages/Sessions";
 import { AppLayout, AuthLayout } from "./layouts";
 import { Messages } from "./pages/Messages";
+import { TutorApplication } from "./pages/TutorApplication";
+import { TutorProfileEdit } from "./pages/TutorProfileEdit";
 
 export const App: React.FC = () => {
   return (
@@ -21,12 +23,15 @@ export const App: React.FC = () => {
               </AuthLayout>
             }
           />
-
+              <Route path="/become-a-tutor" element={<TutorApplication />} />
+ <Route path="/tutor-profile" element={<TutorProfileEdit />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/sessions" element={<Sessions />} />
               <Route path="/messages" element={<Messages />} />
+              {/* <Route path="/become-a-tutor" element={<TutorApplication />} /> */}
+             {/* <Route path="/tutor-profile" element={<TutorProfileEdit />} /> */}
             </Route>
           </Route>
 

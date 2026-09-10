@@ -4,6 +4,7 @@ import {
   Calendar,
   MessageSquare,
   Compass,
+  GraduationCap,
   PanelLeftClose,
   PanelLeftOpen,
   X,
@@ -15,7 +16,9 @@ const navItems = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard, ready: true },
   { to: "/sessions", label: "Sessions", icon: Calendar, ready: true },
   { to: "/messages", label: "Messages", icon: MessageSquare, ready: true },
-  { to: "#", label: "Directory", icon: Compass, ready: false },
+  { to: "/tutor-profile", label: "Profile", icon: GraduationCap, ready: true },
+  { to: "/become-a-tutor", label: "Become a tutor", icon: Compass, ready: true },
+  
 ] as const;
 
 interface SidebarProps {
@@ -28,6 +31,10 @@ interface SidebarProps {
 export function Sidebar({ isOpen, isCollapsed, onClose, onToggle }: SidebarProps) {
   const { user, logout } = useAuth();
   const name = firstNameFromEmail(user?.email);
+  const visibleNavItems = navItems.filter(
+    (item) =>
+      item.to !== "/tutor-profile" || user?.isTutor || Boolean(user?.tutorProfile),
+  );
 
   return (
     <>
@@ -71,7 +78,7 @@ export function Sidebar({ isOpen, isCollapsed, onClose, onToggle }: SidebarProps
         </div>
 
         <nav className={`flex flex-col ${isCollapsed ? "px-1" : "px-2"}`}>
-          {navItems.map(({ to, label, icon: Icon, ready }) =>
+          {visibleNavItems.map(({ to, label, icon: Icon, ready }) =>
             ready ? (
               <NavLink
                 key={label}
