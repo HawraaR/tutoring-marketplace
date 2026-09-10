@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { prisma } from "../../prisma/db";
+import { prisma } from "../db";
 
 const getUserId = (req: Request): string | undefined => (req as any).user?.userId;
 

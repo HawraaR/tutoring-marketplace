@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { prisma } from "../../prisma/db";
+import { prisma } from "../db";
 
 // Create Availability Slot (Tutor)
 export const createAvailabilitySlot = async (req: Request, res: Response) => {

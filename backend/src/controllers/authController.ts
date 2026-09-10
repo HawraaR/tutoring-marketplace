@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { RegisterInput, LoginInput } from "../schemas/authSchema";
-import { prisma } from "../../prisma/db";
+import { prisma } from "../db";
 
 const SALT_ROUNDS = 10;
 

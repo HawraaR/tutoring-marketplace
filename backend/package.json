@@ -4,11 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --watch src --exec tsx src/server.ts",
-    "build": "tsc",
-    "test": "vitest",
-    "seed:messages": "tsx prisma/seedMessages.ts"
-  },
+  "dev": "nodemon --watch src --exec tsx src/server.ts",
+  "build": "prisma generate && tsc",
+  "start": "node dist/server.js",
+  "postinstall": "prisma generate",
+  "test": "vitest",
+  "seed:messages": "tsx prisma/seedMessages.ts"
+},
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },

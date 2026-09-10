@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { prisma } from "../../prisma/db";
+import { prisma } from "../db";
 
 // Create Booking (Student)
 export const createBooking = async (req: Request, res: Response) => {
