@@ -13,16 +13,25 @@ import bookingRoutes from "./routes/bookingRoutes";
 import availabilityRoutes from "./routes/availabilityRoutes";
 import messageRoutes from "./routes/messageRoutes";
 
-
 const app = express();
 app.use(express.json());
 
-
-app.use(cors({ origin: "http://localhost:5173" })); // Allows Vite frontend
+// Enable CORS for local dev and production frontend
+app.use(
+  cors({
+    origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+    credentials: true,
+  })
+);
 
 app.use((req, res, next) => {
   console.log(`🌐 REAL-TIME INCOMING REQUEST: ${req.method} ${req.url}`);
   next();
+});
+
+// Root Health Check Route
+app.get("/", (req, res) => {
+  res.json({ message: "Tutorium API is running successfully!" });
 });
 
 // Attach routes under /api
@@ -42,11 +51,8 @@ app.use((err: any, req: any, res: any, next: any) => {
 
 const PORT = process.env.PORT || 5000;
 
-// Export app instance so test tools can import it without launching the port server
-// export { app };
-
 if (process.env.NODE_ENV !== "test") {
   app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
   });
 }
