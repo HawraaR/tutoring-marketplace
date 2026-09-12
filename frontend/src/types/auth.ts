@@ -29,4 +29,5 @@ export interface AuthContextType {
   logout: () => void;
   activeRole: "student" | "tutor";
   setActiveRole: (role: "student" | "tutor") => void;
+  refreshUser: () => Promise<void>;
 }

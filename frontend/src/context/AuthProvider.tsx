@@ -51,7 +51,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     initializeAuth();
   }, []);
-  
+
+  // Re-fetch the current user (e.g. right after submitting a tutor
+  // application) so nav/role checks that depend on user.tutorProfile update
+  // without requiring a full page reload.
+  const refreshUser = async () => {
+    try {
+      const response = await api.get("/auth/me");
+      setUser(response.data.user);
+    } catch {
+      // Keep the existing user state if the refresh fails; the next
+      // protected request will surface any real auth problem.
+    }
+  };
+
   const login = (newToken: string, newUser: User) => {
     localStorage.setItem("token", newToken);
     setToken(newToken);
@@ -74,7 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout, activeRole, setActiveRole }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, activeRole, setActiveRole, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
