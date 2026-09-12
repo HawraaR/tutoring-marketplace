@@ -16,6 +16,8 @@ import { Messages } from "./pages/Messages";
 import { Calendar } from "./pages/Calendar";
 import LandingPage from "./pages/LandingPage2";
 import Directory from "./pages/TutorDirectory";
+import { TutorApplication } from "./pages/TutorApplication";
+import { TutorProfileEdit } from "./pages/TutorProfileEdit";
 
 const DashboardRedirect: React.FC = () => {
   const { user, activeRole } = useAuth();
@@ -52,6 +54,8 @@ export const App: React.FC = () => {
               <Route path="/messages" element={<Messages />} />
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/directory" element={<Directory />} />
+              <Route path="/become-a-tutor" element={<TutorApplication />} />
+              <Route path="/tutor-profile" element={<TutorProfileEdit />} />
 
               {/* Protected Admin Routes */}
               <Route element={<AdminRoute />}>

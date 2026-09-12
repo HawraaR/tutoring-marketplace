@@ -33,9 +33,24 @@ export interface TutorProfile {
   education: string | null;
   languages: string[];
   verificationStatus: TutorStatus;
+  rejectionReason: string | null;
+  certificates: string[];
+  experience: string[];
   averageRating: number;
   reviewCount: number;
   isFeatured: boolean;
+}
+
+// Payload sent to POST /tutors/apply and PATCH /tutors/me
+export interface TutorApplicationInput {
+  headline: string;
+  bio: string;
+  education: string;
+  hourlyRate: number;
+  subjectIds: string[];
+  languages: string[];
+  certificates: string[];
+  experience: string[];
 }
 
 /**

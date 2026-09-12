@@ -38,6 +38,8 @@ until the corresponding backend models are created.
 =========================================================
 */
 
+import { TutorApplications } from "../components/admin/TutorApplications";
+
 /* =========================================================
    MOCK DATA
 ========================================================= */
@@ -89,33 +91,6 @@ const bookingStats = [
   {
     label: "Cancelled",
     value: "38",
-  },
-];
-
-const pendingTutors = [
-  {
-    name: "Sarah Johnson",
-    email: "sarah.johnson@example.com",
-    subject: "Mathematics",
-    submitted: "2 hours ago",
-  },
-  {
-    name: "Michael Chen",
-    email: "michael.chen@example.com",
-    subject: "Physics",
-    submitted: "5 hours ago",
-  },
-  {
-    name: "Emily Davis",
-    email: "emily.davis@example.com",
-    subject: "English",
-    submitted: "Yesterday",
-  },
-  {
-    name: "Omar Hassan",
-    email: "omar.hassan@example.com",
-    subject: "Computer Science",
-    submitted: "Yesterday",
   },
 ];
 
@@ -463,34 +438,7 @@ export default function AdminD() {
               action="Review all"
             />
 
-            <div className="space-y-4">
-              {pendingTutors.map((tutor) => (
-                <div
-                  key={tutor.email}
-                  className="border-b border-border-subtle pb-4 last:border-0 last:pb-0"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-ink">
-                        {tutor.name}
-                      </p>
-
-                      <p className="mt-1 truncate text-xs text-muted">
-                        {tutor.subject}
-                      </p>
-
-                      <p className="mt-1 text-xs text-muted">
-                        Submitted {tutor.submitted}
-                      </p>
-                    </div>
-
-                    <button className="shrink-0 rounded-md bg-brand-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-primary-hover">
-                      Review
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <TutorApplications />
           </div>
         </section>
 

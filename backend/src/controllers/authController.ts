@@ -81,18 +81,28 @@ export const login = async (
       expiresIn: "7d",
     });
 
+    // Re-fetch with tutorProfile/studentProfile so the sidebar's role checks
+    // (e.g. "has this user already applied to become a tutor?") are correct
+    // immediately after login, without waiting on a separate /auth/me call.
+    const fullUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        isStudent: true,
+        isTutor: true,
+        isAdmin: true,
+        studentProfile: true,
+        tutorProfile: true,
+      },
+    });
+
     return res.status(200).json({
       message: "Login successful.",
       token,
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        isStudent: user.isStudent,
-        isTutor: user.isTutor,
-        isAdmin: user.isAdmin,
-      },
+      user: fullUser,
     });
   } catch (error) {
     console.error("Login error:", error);
