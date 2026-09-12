@@ -24,8 +24,18 @@ const studentNavItems = [
   { to: "/messages", label: "Messages", icon: MessageSquare, ready: true },
   { to: "/calendar", label: "Calendar", icon: Calendar, ready: true },
   { to: "/directory", label: "Directory", icon: Compass, ready: true },
-  { to: "/become-a-tutor", label: "Become a tutor", icon: GraduationCap, ready: true },
-  { to: "/tutor-profile", label: "Tutor profile", icon: GraduationCap, ready: true },
+  {
+    to: "/become-a-tutor",
+    label: "Become a tutor",
+    icon: GraduationCap,
+    ready: true,
+  },
+  {
+    to: "/tutor-profile",
+    label: "Tutor profile",
+    icon: GraduationCap,
+    ready: true,
+  },
 ] as const;
 
 const tutorNavItems = [
@@ -35,7 +45,12 @@ const tutorNavItems = [
   { to: "/calendar", label: "Availability", icon: Calendar, ready: true },
   { to: "#", label: "Earnings", icon: DollarSign, ready: false },
   { to: "/messages", label: "Messages", icon: MessageSquare, ready: true },
-  { to: "/tutor-profile", label: "Tutor profile", icon: GraduationCap, ready: true },
+  {
+    to: "/tutor-profile",
+    label: "Tutor profile",
+    icon: GraduationCap,
+    ready: true,
+  },
 ] as const;
 
 const adminNavItems = [
@@ -72,13 +87,18 @@ export function Sidebar({
   const name = firstNameFromEmail(user?.email);
   const hasBothRoles = Boolean(user?.isStudent && user?.isTutor);
   const hasAppliedAsTutor = Boolean(user?.tutorProfile);
-  const navItems = (activeRole === "tutor" ? tutorNavItems : studentNavItems).filter(
-    (item) => {
-      if (item.to === "/become-a-tutor") return !hasAppliedAsTutor;
-      if (item.to === "/tutor-profile") return hasAppliedAsTutor;
-      return true;
-    },
-  );
+
+  const navItems = (
+    activeRole === "admin"
+      ? adminNavItems
+      : activeRole === "tutor"
+        ? tutorNavItems
+        : studentNavItems
+  ).filter((item) => {
+    if (item.to === "/become-a-tutor") return !hasAppliedAsTutor;
+    if (item.to === "/tutor-profile") return hasAppliedAsTutor;
+    return true;
+  });
 
   useEffect(() => {
     let isMounted = true;
