@@ -5,7 +5,11 @@ import { AuthContext } from "./AuthContext";
 
 const activeRoleKey = (userId: string) => `tutorium-active-role:${userId}`;
 
-function roleForUser(user: User): "student" | "tutor" {
+function roleForUser(user: User): "student" | "tutor" | "admin" {
+  // 1. If user is an Admin, prioritize the admin role
+  if (user.isAdmin) return "admin";
+
+  // 2. Otherwise handle peer roles (Student / Tutor)
   const storedRole = localStorage.getItem(activeRoleKey(user.id));
 
   if (storedRole === "tutor" && user.isTutor) return "tutor";
@@ -22,9 +26,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.getItem("token"),
   );
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [activeRole, setActiveRoleState] = useState<"student" | "tutor">(
-    localStorage.getItem("tutorium-active-role") === "tutor" ? "tutor" : "student",
-  );
+  const [activeRole, setActiveRoleState] = useState<
+    "student" | "tutor" | "admin"
+  >("student");
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -32,20 +36,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (storedToken) {
         try {
-          // Express backend route to verify token
           const response = await api.get("/auth/me");
-          setUser(response.data.user);
+          const fetchedUser = response.data.user || response.data;
+          setUser(fetchedUser);
           setToken(storedToken);
-          setActiveRoleState(roleForUser(response.data.user));
+          setActiveRoleState(roleForUser(fetchedUser));
         } catch {
-          // Invalid or expired token
           localStorage.removeItem("token");
           setToken(null);
           setUser(null);
         }
       }
 
-      // Always stop loading, whether token was found/valid or not!
       setIsLoading(false);
     };
 
@@ -79,7 +81,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setActiveRoleState("student");
   };
 
-  const setActiveRole = (role: "student" | "tutor") => {
+  const setActiveRole = (role: "student" | "tutor" | "admin") => {
+    // Prevent non-admin users from switching into admin mode manually
+    if (role === "admin" && !user?.isAdmin) return;
+
     setActiveRoleState(role);
     if (user) {
       localStorage.setItem(activeRoleKey(user.id), role);
@@ -92,3 +97,85 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     </AuthContext.Provider>
   );
 };
+
+// import React, { useState, useEffect } from "react";
+// import type { User } from "../types";
+// import { api } from "../api/axios";
+// import { AuthContext } from "./AuthContext";
+
+// const activeRoleKey = (userId: string) => `tutorium-active-role:${userId}`;
+
+// function roleForUser(user: User): "student" | "tutor" {
+//   const storedRole = localStorage.getItem(activeRoleKey(user.id));
+
+//   if (storedRole === "tutor" && user.isTutor) return "tutor";
+//   if (storedRole === "student" && user.isStudent) return "student";
+//   if (user.isTutor && !user.isStudent) return "tutor";
+//   return "student";
+// }
+
+// export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+//   children,
+// }) => {
+//   const [user, setUser] = useState<User | null>(null);
+//   const [token, setToken] = useState<string | null>(
+//     localStorage.getItem("token"),
+//   );
+//   const [isLoading, setIsLoading] = useState<boolean>(true);
+//   const [activeRole, setActiveRoleState] = useState<"student" | "tutor">(
+//     localStorage.getItem("tutorium-active-role") === "tutor" ? "tutor" : "student",
+//   );
+
+//   useEffect(() => {
+//     const initializeAuth = async () => {
+//       const storedToken = localStorage.getItem("token");
+
+//       if (storedToken) {
+//         try {
+//           // Express backend route to verify token
+//           const response = await api.get("/auth/me");
+//           setUser(response.data.user);
+//           setToken(storedToken);
+//           setActiveRoleState(roleForUser(response.data.user));
+//         } catch {
+//           // Invalid or expired token
+//           localStorage.removeItem("token");
+//           setToken(null);
+//           setUser(null);
+//         }
+//       }
+
+//       // Always stop loading, whether token was found/valid or not!
+//       setIsLoading(false);
+//     };
+
+//     initializeAuth();
+//   }, []);
+
+//   const login = (newToken: string, newUser: User) => {
+//     localStorage.setItem("token", newToken);
+//     setToken(newToken);
+//     setUser(newUser);
+//     setActiveRoleState(roleForUser(newUser));
+//   };
+
+//   const logout = () => {
+//     localStorage.removeItem("token");
+//     setToken(null);
+//     setUser(null);
+//     setActiveRoleState("student");
+//   };
+
+//   const setActiveRole = (role: "student" | "tutor") => {
+//     setActiveRoleState(role);
+//     if (user) {
+//       localStorage.setItem(activeRoleKey(user.id), role);
+//     }
+//   };
+
+//   return (
+//     <AuthContext.Provider value={{ user, token, isLoading, login, logout, activeRole, setActiveRole }}>
+//       {children}
+//     </AuthContext.Provider>
+//   );
+// };
