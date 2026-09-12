@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  getAllAvailability,
   createAvailabilitySlot,
   getTutorSchedule,
   updateAvailabilitySlot,
@@ -9,6 +10,7 @@ import { authenticateToken } from "../middlewares/auth";
 
 const router = Router();
 
+router.get("/", getAllAvailability);
 router.post("/", authenticateToken, createAvailabilitySlot);
 router.get("/tutors/:tutorId", getTutorSchedule);
 router.put("/:slotId", authenticateToken, updateAvailabilitySlot);
