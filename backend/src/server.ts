@@ -12,6 +12,7 @@ import subjectRoutes from "./routes/subjectRoutes";
 import bookingRoutes from "./routes/bookingRoutes";
 import availabilityRoutes from "./routes/availabilityRoutes";
 import messageRoutes from "./routes/messageRoutes";
+import adminRoutes from './routes/adminRoutes'
 
 const app = express();
 app.use(express.json());
@@ -41,6 +42,7 @@ app.use("/api/tutors", tutorRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/subjects", subjectRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api", messageRoutes);
 
 // Mount AFTER all app.use() routes
@@ -51,8 +53,10 @@ app.use((err: any, req: any, res: any, next: any) => {
 
 const PORT = process.env.PORT || 5000;
 
-if (process.env.NODE_ENV !== "test") {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
+
+server.on("error", (err: any) => {
+  console.error("🔥 Server failed to start:", err);
+});

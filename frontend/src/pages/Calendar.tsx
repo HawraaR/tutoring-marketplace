@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { api } from "../api/axios";
+import * as availabilityAPI from '../api/availabilityAPI';
 import { useAuth } from "../context/AuthContext";
 import type {
   CalendarMode,
@@ -86,46 +87,46 @@ function EventPill({
   );
 }
 
-const getAvailabilityData = async (
-  tutorId: string,
-): Promise<CalendarEvent[]> => {
-  const res = await api.get<AvailabilitySlot[]>(
-    `/availability/tutors/${tutorId}`,
-  );
-  const rawData = res.data || [];
+const getAvailabilityData = async (): Promise<CalendarEvent[]> => {
+  // 1. Fetch all slots across all tutors
+  const slots: AvailabilitySlot[] = await availabilityAPI.getAvailableSlots();
+
+  // 2. Ensure rawData is safely an array
+  const rawData = Array.isArray(slots) ? slots : [];
 
   return rawData.map((slot) => {
     const startObj = new Date(slot.startTime);
     const endObj = new Date(slot.endTime);
 
-    // Extract local YYYY-MM-DD date matching local timezone
+    // Extract local YYYY-MM-DD date
     const localYear = startObj.getFullYear();
     const localMonth = String(startObj.getMonth() + 1).padStart(2, "0");
     const localDay = String(startObj.getDate()).padStart(2, "0");
     const localDateStr = `${localYear}-${localMonth}-${localDay}`;
 
+    // Extract tutor name directly from the slot's populated tutor relation
     const tutorObj = slot.tutor;
     const fullName =
       tutorObj?.firstName || tutorObj?.lastName
         ? [tutorObj.firstName, tutorObj.lastName].filter(Boolean).join(" ")
         : "";
-    const tutorName = fullName || tutorObj?.name || "Tutor";
+    const tutorName = fullName || "Tutor";
 
     return {
       id: slot.id,
-      tutorId: slot.tutorId || tutorObj?.id || tutorId,
+      tutorId: slot.tutorId || tutorObj?.id || "", // Dynamically assigned from slot data
       startTime: slot.startTime,
       endTime: slot.endTime,
       date: localDateStr,
       start: startObj.toLocaleTimeString([], {
         hour: "numeric",
         minute: "2-digit",
-        hour12: true, // Enables 12-hour format with AM/PM (e.g., "6:00 AM")
+        hour12: true, // "6:00 AM"
       }),
       end: endObj.toLocaleTimeString([], {
         hour: "numeric",
         minute: "2-digit",
-        hour12: true, // Enables 12-hour format with AM/PM (e.g., "7:00 AM")
+        hour12: true, // "7:00 AM"
       }),
       title: tutorName !== "Tutor" ? tutorName : "Tutoring Session",
       tutor: tutorName,
@@ -167,7 +168,7 @@ export function Calendar() {
     setLoading(true);
     try {
       if (!user?.id) return;
-      const mappedEvents = await getAvailabilityData(user.id);
+      const mappedEvents = await getAvailabilityData();
       setEvents(mappedEvents);
     } catch (err: unknown) {
       console.error("Failed to refresh schedule:", err);
@@ -186,7 +187,7 @@ export function Calendar() {
 
     if (!user?.id) return;
 
-    getAvailabilityData(user.id)
+    getAvailabilityData()
       .then((mappedEvents) => {
         if (isSubscribed) {
           setEvents(mappedEvents);
