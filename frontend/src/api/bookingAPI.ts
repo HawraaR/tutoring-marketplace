@@ -11,9 +11,10 @@ import type {
  * GET /bookings/user
  */
 export const getUserBookings = async (): Promise<Booking[]> => {
-  const response = await api.get<ApiResponse<Booking[]>>("/bookings/user");
-  return response.data.data;
+  const response = await api.get<Booking[]>("/bookings/user");
+  return response.data; // controller returns the array directly
 };
+
 
 /**
  * Create a new booking request

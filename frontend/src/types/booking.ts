@@ -71,6 +71,9 @@ export interface UnifiedSession {
   sortDate: string;
   tone?: "slate" | "olive" | "amber";
   meetingUrl?: string;
+  review?: { id: string; rating: number; comment: string } | null;
+  // Ensure you also have the raw booking ID available to send to the backend
+  bookingId?: string; 
 }
 
 // Payload for creating a new booking (POST /bookings)

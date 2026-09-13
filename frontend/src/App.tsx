@@ -20,6 +20,7 @@ import Directory from "./pages/TutorDirectory";
 import TutoringReqs from "./pages/TutoringReqs";
 import { TutorApplication } from "./pages/TutorApplication";
 import { TutorProfileEdit } from "./pages/TutorProfileEdit";
+import TutorProfileDetail from "./pages/TutorProfileDetail";
 import { StudentProfileEdit } from "./pages/StudentProfileEdit";
 
 const DashboardRedirect: React.FC = () => {
@@ -57,6 +58,7 @@ export const App: React.FC = () => {
               <Route path="/messages" element={<Messages />} />
               <Route path="/calendar" element={<CalendarV2 />} />
               <Route path="/directory" element={<Directory />} />
+              <Route path="/tutors/:id" element={<TutorProfileDetail />} />
               <Route path="/become-a-tutor" element={<TutorApplication />} />
               <Route path="/tutor-profile" element={<TutorProfileEdit />} />
               <Route path="/tutoring-requirements" element={<TutoringReqs />} />

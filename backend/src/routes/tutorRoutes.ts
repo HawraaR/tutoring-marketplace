@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   applyAsTutor,
   getTutors,
+  getTutorById,
   getMyTutorProfile,
   updateMyTutorProfile,
   listTutorApplications,
@@ -52,6 +53,7 @@ router.patch(
 );
 
 router.get("/", getTutors);
+router.get("/:id", getTutorById);
 
 export default router;
 
