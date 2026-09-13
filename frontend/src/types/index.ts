@@ -22,3 +22,4 @@ export type {
   TutorListItem,
   TutorApplicationInput,
 } from "./tutor";
+export * from "./student";
