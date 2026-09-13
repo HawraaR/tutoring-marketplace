@@ -4,13 +4,19 @@
 @tutorId = 7b5eee9e-d5cc-4967-ab2e-5e85d78d15f2
 @slotId = 355e169e-d829-4554-b9df-74d5e145edfd
 
-### 1. Get Tutor Availability Schedule (Public Route)
+### 1. Get All AvailabilitySlots (Public Route)
+GET {{baseUrl}}/
+Content-Type: application/json
+
+###
+
+### 2. Get Tutor Availability Schedule (Public Route)
 GET {{baseUrl}}/tutors/{{tutorId}}
 Content-Type: application/json
 
 ###
 
-### 2. Create Availability Slot (Protected)
+### 3. Create Availability Slot (Protected)
 POST {{baseUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -23,7 +29,7 @@ Content-Type: application/json
 
 ###
 
-### 3. Update Availability Slot (Protected)
+### 4. Update Availability Slot (Protected)
 PUT {{baseUrl}}/{{slotId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -35,7 +41,7 @@ Content-Type: application/json
 
 ###
 
-### 4. Delete Availability Slot (Protected)
+### 5. Delete Availability Slot (Protected)
 DELETE {{baseUrl}}/{{slotId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json

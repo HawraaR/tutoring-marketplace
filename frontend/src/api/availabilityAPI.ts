@@ -7,6 +7,18 @@ import type {
 } from "../types";
 
 /**
+ * Fetch all availability slots
+ * GET /availability/
+ */
+export const getAvailableSlots = async (): Promise<AvailabilitySlot[]> => {
+  const response = await api.get<ApiResponse<AvailabilitySlot[]>>(
+    `/availability/`
+  );
+  return response.data.data;
+};
+
+
+/**
  * Fetch availability slots for a specific tutor
  * GET /availability/tutors/:tutorId
  */

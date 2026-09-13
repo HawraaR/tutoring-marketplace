@@ -1,7 +1,7 @@
 // src/types/calendar.ts
 
 // Component Modes & UI Styling Types
-export type CalendarMode = "student" | "tutor";
+export type CalendarMode = "student" | "tutor" | "admin";
 export type EventTone = "burgundy" | "olive" | "slate";
 export type EventStatus = "available" | "booked";
 

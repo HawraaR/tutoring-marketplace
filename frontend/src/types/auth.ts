@@ -27,7 +27,7 @@ export interface AuthContextType {
   isLoading: boolean;
   login: (token: string, user: User) => void;
   logout: () => void;
-  activeRole: "student" | "tutor";
-  setActiveRole: (role: "student" | "tutor") => void;
+  activeRole: "student" | "tutor" | 'admin';
+  setActiveRole: (role: "student" | "tutor" | 'admin') => void;
   refreshUser: () => Promise<void>;
 }
