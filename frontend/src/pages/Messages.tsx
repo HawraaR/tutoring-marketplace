@@ -261,7 +261,7 @@ export function Messages() {
       void loadConversations().finally(() => {
         isPollingRef.current = false;
       });
-    }, 15000);
+    }, 5000);
     return () => {
       window.clearTimeout(initialTimer);
       window.clearInterval(interval);
