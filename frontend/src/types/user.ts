@@ -1,4 +1,5 @@
 import type { TutorProfile } from "./tutor";
+import type { StudentProfile } from "./student";
 
 export interface User {
   id: string;
@@ -13,4 +14,6 @@ export interface User {
 
   // Present once the user has applied to become a tutor (any verification status).
   tutorProfile?: TutorProfile | null;
+  // Every user gets one on registration.
+  studentProfile?: StudentProfile | null;
 }

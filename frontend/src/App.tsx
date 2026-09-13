@@ -13,12 +13,15 @@ import { TutorApprovals } from "./pages/TutorApprovals";
 import { SessionPage } from "./pages/SessionPage";
 import { AppLayout, AuthLayout } from "./layouts";
 import { Messages } from "./pages/Messages";
-import { Calendar } from "./pages/Calendar";
+// import { Calendar } from "./pages/Calendar";
+import {CalendarV2}  from "./pages/CalendarV2";
 import LandingPage from "./pages/LandingPage2";
 import Directory from "./pages/TutorDirectory";
+import TutoringReqs from "./pages/TutoringReqs";
 import { TutorApplication } from "./pages/TutorApplication";
 import { TutorProfileEdit } from "./pages/TutorProfileEdit";
 import TutorProfileDetail from "./pages/TutorProfileDetail";
+import { StudentProfileEdit } from "./pages/StudentProfileEdit";
 
 const DashboardRedirect: React.FC = () => {
   const { user, activeRole } = useAuth();
@@ -53,11 +56,13 @@ export const App: React.FC = () => {
               <Route path="/dashboard" element={<DashboardRedirect />} />
               <Route path="/sessions" element={<SessionPage />} />
               <Route path="/messages" element={<Messages />} />
-              <Route path="/calendar" element={<Calendar />} />
+              <Route path="/calendar" element={<CalendarV2 />} />
               <Route path="/directory" element={<Directory />} />
               <Route path="/tutors/:id" element={<TutorProfileDetail />} />
               <Route path="/become-a-tutor" element={<TutorApplication />} />
               <Route path="/tutor-profile" element={<TutorProfileEdit />} />
+              <Route path="/tutoring-requirements" element={<TutoringReqs />} />
+              <Route path="/profile" element={<StudentProfileEdit />} />
 
               {/* Protected Admin Routes */}
               <Route element={<AdminRoute />}>

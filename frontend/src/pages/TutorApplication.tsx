@@ -42,7 +42,10 @@ export function TutorApplication() {
   const [education, setEducation] = useState("");
   const [hourlyRate, setHourlyRate] = useState("");
   const [languages, setLanguages] = useState("English");
-  const [certificates, setCertificates] = useState("");
+  
+  // Changed certificates from string to File array for file selection
+  const [certificateFiles, setCertificateFiles] = useState<File[]>([]);
+  
   const [experience, setExperience] = useState("");
 
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
@@ -52,7 +55,7 @@ export function TutorApplication() {
   const existing = user?.tutorProfile;
 
   useEffect(() => {
-    if (existing) return; // No need to load the subject picker once already applied
+    if (existing) return;
     getSubjects()
       .then(setSubjects)
       .catch(() => setSubjects([]));
@@ -62,6 +65,23 @@ export function TutorApplication() {
     setSelectedSubjectIds((prev) =>
       prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
     );
+  };
+
+  // Handle file selection with a 10MB individual limit check
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const files = Array.from(e.target.files);
+    const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB limit
+
+    for (const file of files) {
+      if (file.size > MAX_SIZE_BYTES) {
+        setErrorMessages([`File "${file.name}" exceeds the 10MB limit.`]);
+        return;
+      }
+    }
+
+    setErrorMessages([]);
+    setCertificateFiles(files);
   };
 
   // 1. Already applied -> show status instead of the form
@@ -111,7 +131,7 @@ export function TutorApplication() {
     );
   }
 
-  // 3. The application form
+  // 3. The application form using FormData
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setErrorMessages([]);
@@ -123,16 +143,25 @@ export function TutorApplication() {
 
     setIsLoading(true);
     try {
-      await applyAsTutor({
-        headline,
-        bio,
-        education,
-        hourlyRate: Number(hourlyRate) || 0,
-        subjectIds: selectedSubjectIds,
-        languages: toList(languages),
-        certificates: toList(certificates),
-        experience: toList(experience),
+      const data = new FormData();
+      data.append("headline", headline);
+      data.append("bio", bio);
+      data.append("education", education);
+      data.append("hourlyRate", String(Number(hourlyRate) || 0));
+      
+      // Append array fields as JSON strings so backend can parse them easily
+      data.append("subjectIds", JSON.stringify(selectedSubjectIds));
+      data.append("languages", JSON.stringify(toList(languages)));
+      data.append("experience", JSON.stringify(toList(experience)));
+
+      // Append each certificate file under the 'certificates' field name
+      certificateFiles.forEach((file) => {
+        data.append("certificates", file);
       });
+
+      // Pass the FormData object to your API client function
+      await applyAsTutor(data);
+      
       await refreshUser();
       setSubmitted(true);
     } catch (error: any) {
@@ -234,12 +263,26 @@ export function TutorApplication() {
             value={languages}
             onChange={(e) => setLanguages(e.target.value)}
           />
-          <Input
-            label="Certificates (comma-separated, optional)"
-            placeholder="e.g. AWS Certified, CELTA"
-            value={certificates}
-            onChange={(e) => setCertificates(e.target.value)}
-          />
+
+          {/* Certificate File Picker Input */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-ink">
+              Certificates (PDF or Images, Max 10MB each)
+            </label>
+            <input
+              type="file"
+              multiple
+              accept=".pdf,image/png,image/jpeg"
+              onChange={handleFileChange}
+              className="w-full text-sm text-muted file:mr-4 file:rounded-sm file:border-0 file:bg-brand-primary/10 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-brand-primary hover:file:bg-brand-primary/20"
+            />
+            {certificateFiles.length > 0 && (
+              <p className="mt-1 text-xs text-muted">
+                {certificateFiles.length} file(s) selected
+              </p>
+            )}
+          </div>
+
           <Input
             label="Experience (comma-separated, optional)"
             placeholder="e.g. 3 Years University TA"

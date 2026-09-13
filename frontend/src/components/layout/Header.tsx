@@ -1,6 +1,6 @@
 import { Menu, Search } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { firstNameFromEmail } from "../../lib/displayName";
+// import { firstNameFromEmail } from "../../lib/displayName";
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -8,7 +8,7 @@ interface HeaderProps {
 
 export function Header({ onMenuClick }: HeaderProps) {
   const { user } = useAuth();
-  const name = firstNameFromEmail(user?.email);
+  // const name = firstNameFromEmail(user?.email);
 
   return (
     <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border-subtle bg-surface-card px-4 py-3 md:px-8">
@@ -23,11 +23,11 @@ export function Header({ onMenuClick }: HeaderProps) {
         </button>
         <div className="min-w-0">
           <h1 className="font-serif truncate text-xl font-semibold text-ink">
-            Welcome back, {name}
+            Welcome back, {user?.firstName} {user?.lastName}
           </h1>
-          <p className="hidden text-sm text-muted sm:block">
+          {/* <p className="hidden text-sm text-muted sm:block">
             Autumn 2026 · 3 sessions this week · 11.5 hours logged
-          </p>
+          </p> */}
         </div>
       </div>
 

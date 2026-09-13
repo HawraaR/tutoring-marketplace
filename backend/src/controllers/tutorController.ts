@@ -1,8 +1,82 @@
 import { Request, Response } from "express";
+import multer from "multer";
 import { prisma } from "../db";
+import { supabase } from "../supabase"; // Adjust path to your supabase config
+
+// 1. Configure Multer with 10MB limit and memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB limit
+});
+
+// 2. Export middleware for routes (accepts up to 5 files with field name 'certificates')
+export const uploadCertificateMiddleware = upload.array("certificates", 5);
 
 const getUserId = (req: Request): string | undefined =>
   (req as any).user?.userId || (req as any).user?.id;
+
+// Helper to upload files to Supabase Storage and get public URLs
+async function uploadFilesToSupabase(files: Express.Multer.File[], userId: string): Promise<string[]> {
+  const uploadedUrls: string[] = [];
+
+  for (const file of files) {
+    const fileName = `${userId}-${Date.now()}-${file.originalname}`;
+
+    const { data, error } = await supabase.storage
+      .from("certificates")
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false,
+      });
+
+    if (error) {
+      throw new Error(`Supabase upload error: ${error.message}`);
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("certificates")
+      .getPublicUrl(data.path);
+
+    uploadedUrls.push(publicUrlData.publicUrl);
+  }
+
+  return uploadedUrls;
+}
+
+// export const applyAsTutor = async (req: Request, res: Response) => {
+//   try {
+//     const userId = getUserId(req); 
+//     const files = req.files as Express.Multer.File[]; 
+
+//     // Use the helper function here! This resolves the unused declaration warning.
+//     const certificateUrls = await uploadFilesToSupabase(files, userId);
+
+//     // Create the TutorProfile in Prisma with the resulting URLs
+//     const tutorProfile = await prisma.tutorProfile.create({
+//       data: {
+//         userId,
+//         headline: req.body.headline,
+//         bio: req.body.bio,
+//         education: req.body.education,
+//         hourlyRate: req.body.hourlyRate,
+//         subjectIds: req.body.subjectIds,
+//         languages: req.body.languages,
+//         experience: req.body.experience,
+//         certificates: certificateUrls, // Save the Supabase public URLs array here
+//         verificationStatus: "PENDING",
+//       },
+//     });
+
+//     return res.status(201).json({
+//       message: "Tutor application submitted successfully",
+//       tutorProfile,
+//     });
+//   } catch (error: any) {
+//     console.error("Apply Tutor Error:", error);
+//     return res.status(500).json({ error: error.message || "Internal server error" });
+//   }
+// };
+
 
 // POST /api/tutors/apply
 export const applyAsTutor = async (req: Request, res: Response) => {
@@ -15,7 +89,6 @@ export const applyAsTutor = async (req: Request, res: Response) => {
       subjectIds,
       education,
       languages,
-      certificates,
       experience,
     } = req.body;
 
@@ -29,7 +102,19 @@ export const applyAsTutor = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Tutor profile already exists for this user" });
     }
 
-    // Update User role flag and create TutorProfile
+    // Process file uploads if any certificates were submitted
+    let certificateUrls: string[] = [];
+    const files = req.files as Express.Multer.File[];
+    if (files && files.length > 0) {
+      certificateUrls = await uploadFilesToSupabase(files, userId!);
+    }
+
+    // Safely parse JSON strings (FormData transmits arrays as JSON strings)
+    const parsedLanguages = typeof languages === "string" ? JSON.parse(languages) : (languages || ["English"]);
+    const parsedExperience = typeof experience === "string" ? JSON.parse(experience) : (experience || []);
+    const parsedSubjectIds = typeof subjectIds === "string" ? JSON.parse(subjectIds) : subjectIds;
+
+    // Create profile in Prisma with the uploaded certificate URLs
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -40,10 +125,10 @@ export const applyAsTutor = async (req: Request, res: Response) => {
             bio,
             hourlyRate: parseFloat(hourlyRate) || 0,
             education,
-            languages: languages || ["English"],
-            certificates: certificates || [],
-            experience: experience || [],
-            verificationStatus: "PENDING", // Requires Admin Approval
+            languages: parsedLanguages,
+            certificates: certificateUrls,
+            experience: parsedExperience,
+            verificationStatus: "PENDING",
           },
         },
       },
@@ -57,10 +142,10 @@ export const applyAsTutor = async (req: Request, res: Response) => {
       },
     });
 
-    // Link the taught subjects (real Subject catalog, not freeform text)
-    if (Array.isArray(subjectIds) && subjectIds.length > 0) {
+    // Link taught subjects
+    if (Array.isArray(parsedSubjectIds) && parsedSubjectIds.length > 0) {
       await prisma.tutorSubject.createMany({
-        data: subjectIds.map((subjectId: string) => ({ tutorId: userId!, subjectId })),
+        data: parsedSubjectIds.map((subjectId: string) => ({ tutorId: userId!, subjectId })),
         skipDuplicates: true,
       });
     }
@@ -74,6 +159,7 @@ export const applyAsTutor = async (req: Request, res: Response) => {
     return res.status(500).json({ error: "Failed to create tutor profile" });
   }
 };
+
 
 // GET /api/tutors/me — the logged-in user's own tutor profile + selected subjects
 export const getMyTutorProfile = async (req: Request, res: Response) => {
@@ -122,9 +208,28 @@ export const updateMyTutorProfile = async (req: Request, res: Response) => {
       hourlyRate,
       subjectIds,
       languages,
-      certificates,
+      existingCertificates,
       experience,
     } = req.body;
+
+    // 1. Process newly uploaded files via Multer (`req.files`) and pass userId
+    const files = req.files as Express.Multer.File[] | undefined;
+    let newCertificateUrls: string[] = [];
+
+    if (files && files.length > 0) {
+      newCertificateUrls = await uploadFilesToSupabase(files, userId!);
+    }
+
+    // 2. Normalize existing certificates
+    let keptCertificates: string[] = [];
+    if (existingCertificates) {
+      keptCertificates = Array.isArray(existingCertificates) 
+        ? existingCertificates 
+        : [existingCertificates];
+    }
+
+    // 3. Combine kept existing certificates with newly uploaded ones
+    const finalCertificates = [...keptCertificates, ...newCertificateUrls];
 
     const data: Record<string, unknown> = {};
     if (headline !== undefined) data.headline = headline;
@@ -132,7 +237,7 @@ export const updateMyTutorProfile = async (req: Request, res: Response) => {
     if (education !== undefined) data.education = education;
     if (hourlyRate !== undefined) data.hourlyRate = parseFloat(hourlyRate) || 0;
     if (languages !== undefined) data.languages = languages;
-    if (certificates !== undefined) data.certificates = certificates;
+    if (finalCertificates.length > 0) data.certificates = finalCertificates;
     if (experience !== undefined) data.experience = experience;
 
     const [profile] = await prisma.$transaction([
@@ -155,7 +260,64 @@ export const updateMyTutorProfile = async (req: Request, res: Response) => {
   }
 };
 
+
+// export const updateMyTutorProfile = async (req: Request, res: Response) => {
+//   try {
+//     const userId = getUserId(req);
+
+//     const existing = await prisma.tutorProfile.findUnique({ where: { userId } });
+//     if (!existing) {
+//       return res.status(404).json({ error: "No tutor profile found. Apply as a tutor first." });
+//     }
+//     if (existing.verificationStatus !== "APPROVED") {
+//       return res.status(403).json({ error: "Your profile is not approved yet, so it cannot be edited." });
+//     }
+
+//     const {
+//       headline,
+//       bio,
+//       education,
+//       hourlyRate,
+//       subjectIds,
+//       languages,
+//       certificates,
+//       experience,
+//     } = req.body;
+
+//     const data: Record<string, unknown> = {};
+//     if (headline !== undefined) data.headline = headline;
+//     if (bio !== undefined) data.bio = bio;
+//     if (education !== undefined) data.education = education;
+//     if (hourlyRate !== undefined) data.hourlyRate = parseFloat(hourlyRate) || 0;
+//     if (languages !== undefined) data.languages = languages;
+//     if (certificates !== undefined) data.certificates = certificates;
+//     if (experience !== undefined) data.experience = experience;
+
+//     const [profile] = await prisma.$transaction([
+//       prisma.tutorProfile.update({ where: { userId }, data }),
+//       ...(Array.isArray(subjectIds)
+//         ? [
+//             prisma.tutorSubject.deleteMany({ where: { tutorId: userId } }),
+//             prisma.tutorSubject.createMany({
+//               data: subjectIds.map((subjectId: string) => ({ tutorId: userId!, subjectId })),
+//               skipDuplicates: true,
+//             }),
+//           ]
+//         : []),
+//     ]);
+
+//     return res.status(200).json({ message: "Tutor profile updated", profile });
+//   } catch (error) {
+//     console.error("Update Tutor Profile Error:", error);
+//     return res.status(500).json({ error: "Failed to update tutor profile" });
+//   }
+// };
+
 // GET /api/tutors/applications?status=PENDING|APPROVED|REJECTED — admin only
+
+
+
+
 export const listTutorApplications = async (req: Request, res: Response) => {
   try {
     const status = (req.query.status as string)?.toUpperCase() || "PENDING";
