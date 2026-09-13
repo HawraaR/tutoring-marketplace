@@ -19,7 +19,8 @@ import LandingPage from "./pages/LandingPage2";
 import Directory from "./pages/TutorDirectory";
 import TutoringReqs from "./pages/TutoringReqs";
 import { TutorApplication } from "./pages/TutorApplication";
-import {TutorProfileEdit}  from "./pages/TutorProfileEdit";
+import { TutorProfileEdit } from "./pages/TutorProfileEdit";
+import { StudentProfileEdit } from "./pages/StudentProfileEdit";
 
 const DashboardRedirect: React.FC = () => {
   const { user, activeRole } = useAuth();
@@ -59,6 +60,7 @@ export const App: React.FC = () => {
               <Route path="/become-a-tutor" element={<TutorApplication />} />
               <Route path="/tutor-profile" element={<TutorProfileEdit />} />
               <Route path="/tutoring-requirements" element={<TutoringReqs />} />
+              <Route path="/profile" element={<StudentProfileEdit />} />
 
               {/* Protected Admin Routes */}
               <Route element={<AdminRoute />}>

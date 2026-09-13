@@ -8,6 +8,7 @@ import cors from "cors";
 import userRoutes from "./routes/UserRoutes";
 import authRoutes from "./routes/authRoutes";
 import tutorRoutes from "./routes/tutorRoutes";
+import studentRoutes from "./routes/studentRoutes";
 import subjectRoutes from "./routes/subjectRoutes";
 import bookingRoutes from "./routes/bookingRoutes";
 import availabilityRoutes from "./routes/availabilityRoutes";
@@ -39,6 +40,7 @@ app.get("/", (req, res) => {
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/tutors", tutorRoutes);
+app.use("/api/students", studentRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/subjects", subjectRoutes);
