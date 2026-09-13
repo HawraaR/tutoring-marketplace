@@ -17,7 +17,7 @@ import { Calendar } from "./pages/Calendar";
 import LandingPage from "./pages/LandingPage2";
 import Directory from "./pages/TutorDirectory";
 import { TutorApplication } from "./pages/TutorApplication";
-import { TutorProfileEdit } from "./pages/TutorProfileEdit";
+import {TutorProfileEdit}  from "./pages/TutorProfileEdit";
 
 const DashboardRedirect: React.FC = () => {
   const { user, activeRole } = useAuth();
