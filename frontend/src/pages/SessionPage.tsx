@@ -17,6 +17,7 @@ export function SessionPage() {
     visibleSessions,
     isTutorMode,
     handleAction,
+    refreshSessions,
   } = useSessions();
 
   return (
@@ -72,6 +73,7 @@ export function SessionPage() {
                   session={session}
                   isTutorMode={isTutorMode}
                   onAction={handleAction}
+                  onReviewSubmitted={refreshSessions}
                 />
               ))}
             </div>

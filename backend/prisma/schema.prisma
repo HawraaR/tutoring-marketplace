@@ -32,6 +32,9 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+
+  tutorReviews  Review[] @relation("TutorReviews")
+  studentReviews Review[] @relation("StudentReviews")
 }
 
 enum TutorStatus {
@@ -147,11 +150,13 @@ model Booking {
   notes              String?
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
+  review Review?
 
   student          User              @relation("StudentBookings", fields: [studentId], references: [id], onDelete: Cascade)
   tutor            User              @relation("TutorBookings", fields: [tutorId], references: [id], onDelete: Cascade)
   subject          Subject           @relation(fields: [subjectId], references: [id])
   availabilitySlot AvailabilitySlot? @relation(fields: [availabilitySlotId], references: [id])
+
 
   @@index([studentId])
   @@index([tutorId])
@@ -195,4 +200,22 @@ model Message {
 
   @@index([conversationId, createdAt])
   @@index([senderId])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  bookingId String   @unique   // <--- THIS MUST BE UNIQUE
+  tutorId   String
+  studentId String
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  tutor   User    @relation("TutorReviews", fields: [tutorId], references: [id], onDelete: Cascade)
+  student User    @relation("StudentReviews", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([tutorId])
+  @@index([studentId])
 }

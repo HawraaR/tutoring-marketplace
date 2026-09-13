@@ -13,6 +13,7 @@ import bookingRoutes from "./routes/bookingRoutes";
 import availabilityRoutes from "./routes/availabilityRoutes";
 import messageRoutes from "./routes/messageRoutes";
 import adminRoutes from './routes/adminRoutes'
+import reviewRoute from "./routes/reviewRoutes";
 
 const app = express();
 app.use(express.json());
@@ -44,6 +45,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/subjects", subjectRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api", messageRoutes);
+app.use("/api/reviews", reviewRoute);
 
 // Mount AFTER all app.use() routes
 app.use((err: any, req: any, res: any, next: any) => {

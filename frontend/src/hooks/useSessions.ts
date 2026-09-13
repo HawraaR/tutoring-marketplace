@@ -239,5 +239,6 @@ export function useSessions() {
     visibleSessions,
     isTutorMode,
     handleAction,
+    refreshSessions: fetchSessions,
   };
 }

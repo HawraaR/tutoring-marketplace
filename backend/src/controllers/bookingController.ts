@@ -70,6 +70,7 @@ export const getUserBookings = async (req: Request, res: Response) => {
           select: { id: true, firstName: true, lastName: true, email: true },
         },
         subject: true,
+        review: true,
       },
       orderBy: { startTime: "desc" },
     });
@@ -95,6 +96,7 @@ export const getTutorBookings = async (req: Request, res: Response) => {
           select: { id: true, firstName: true, lastName: true, email: true },
         },
         subject: true,
+        review: true,
       },
       orderBy: { startTime: "desc" },
     });
@@ -125,24 +127,15 @@ export const updateBookingStatus = async (
       return res.status(403).json({ error: "Unauthorized." });
     }
 
+    let updated;
     if (status === "CANCELLED" && booking.availabilitySlotId) {
-      await prisma.$transaction([
-        prisma.booking.update({
-          where: { id: bookingId },
-          data: { status: "CANCELLED" },
-        }),
-        prisma.availabilitySlot.update({
-          where: { id: booking.availabilitySlotId },
-          data: { isBooked: false },
-        }),
+      [updated] = await prisma.$transaction([
+        prisma.booking.update({ where: { id: bookingId }, data: { status: "CANCELLED" } }),
+        prisma.availabilitySlot.update({ where: { id: booking.availabilitySlotId }, data: { isBooked: false } }),
       ]);
     } else {
-      await prisma.booking.update({
-        where: { id: bookingId },
-        data: { status },
-      });
-    }
-
+      updated = await prisma.booking.update({ where: { id: bookingId }, data: { status } });
+    } 
     return res
       .status(200)
       .json({ message: `Booking status updated to ${status}` });

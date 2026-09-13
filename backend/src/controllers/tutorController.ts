@@ -201,6 +201,64 @@ export const reviewTutorApplication = async (req: Request, res: Response) => {
   }
 };
 
+// GET /api/tutors/:id — public
+export const getTutorById = async (req: Request, res: Response) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    const tutor = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        tutorProfile: true,
+        tutorSubjects: { include: { subject: true } },
+        availability: {
+          where: { isBooked: false, startTime: { gte: new Date() } },
+          orderBy: { startTime: "asc" },
+        },
+        tutorReviews: {
+          include: {
+            booking: { include: { subject: true } }, // ← subject via the session
+            student: { select: { id: true, firstName: true, lastName: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        },
+      },
+    });
+
+    if (!tutor || !tutor.tutorProfile || tutor.tutorProfile.verificationStatus !== "APPROVED") {
+      return res.status(404).json({ error: "NOT_FOUND" });
+    }
+
+    const completedSessions = await prisma.booking.count({
+      where: { tutorId: id, status: "COMPLETED" },
+    });
+
+    return res.status(200).json({
+      id: tutor.id,
+      email: tutor.email,
+      firstName: tutor.firstName,
+      lastName: tutor.lastName,
+      tutorProfile: tutor.tutorProfile,
+      tutorSubjects: tutor.tutorSubjects,
+      availability: tutor.availability,
+      stats: { completedSessions },
+      reviews: tutor.tutorReviews.map((r) => ({
+        id: r.id,
+        rating: r.rating,
+        comment: r.comment,
+        createdAt: r.createdAt,
+        sessionDate: r.booking.startTime, // the session being reviewed
+        subject: r.booking.subject,
+        student: r.student,
+      })),
+    });
+  } catch (error) {
+    console.error("GET /api/tutors/:id failed:", error);
+    return res.status(500).json({ error: "Failed to fetch tutor details" });
+  }
+};
+
 // GET /api/tutors  — public, no auth middleware
 export const getTutors = async (_req: Request, res: Response) => {
   try {
