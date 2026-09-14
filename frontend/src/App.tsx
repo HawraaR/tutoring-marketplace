@@ -22,6 +22,7 @@ import { TutorApplication } from "./pages/TutorApplication";
 import { TutorProfileEdit } from "./pages/TutorProfileEdit";
 import TutorProfileDetail from "./pages/TutorProfileDetail";
 import { StudentProfileEdit } from "./pages/StudentProfileEdit";
+import {Settings} from "./pages/Settings"; 
 
 const DashboardRedirect: React.FC = () => {
   const { user, activeRole } = useAuth();
@@ -63,6 +64,7 @@ export const App: React.FC = () => {
               <Route path="/tutor-profile" element={<TutorProfileEdit />} />
               <Route path="/tutoring-requirements" element={<TutoringReqs />} />
               <Route path="/profile" element={<StudentProfileEdit />} />
+              <Route path="/settings" element={<Settings />} />
 
               {/* Protected Admin Routes */}
               <Route element={<AdminRoute />}>

@@ -28,7 +28,12 @@ export const updateMyTutorProfile = async (
 
 // GET /tutors/applications?status=... — admin only
 export interface TutorApplication extends TutorProfile {
-  user: { id: string; email: string; firstName: string | null; lastName: string | null };
+  user: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+  };
 }
 
 export const getTutorApplications = async (
@@ -41,16 +46,15 @@ export const getTutorApplications = async (
 // PATCH /tutors/applications/:id — admin only
 export const reviewTutorApplication = async (
   id: string,
-  action: "approve" | "reject",
+  status: "APPROVED" | "REJECTED",
   rejectionReason?: string,
 ): Promise<{ message: string }> => {
   const response = await api.patch(`/tutors/applications/${id}`, {
-    action,
+    status,
     rejectionReason,
   });
   return response.data;
 };
-
 
 // import { api } from "./axios";
 // import type { Subject, TutorApplicationInput, TutorProfile } from "../types";

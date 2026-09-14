@@ -8,15 +8,22 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   X,
-  DollarSign,
   GraduationCap,
   UserRound,
   ShieldAlert,
   Users,
+  Settings,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { firstNameFromEmail, initialsFromEmail } from "../../lib/displayName";
 import { getConversations } from "../../api/messageAPI";
+
+const settingsNavItem = {
+  to: "/settings",
+  label: "Settings",
+  icon: Settings,
+  ready: true,
+};
 
 const studentNavItems = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard, ready: true },
@@ -24,21 +31,35 @@ const studentNavItems = [
   { to: "/messages", label: "Messages", icon: MessageSquare, ready: true },
   { to: "/calendar", label: "Calendar", icon: Calendar, ready: true },
   { to: "/directory", label: "Directory", icon: Compass, ready: true },
-  { to: "/profile", label: "My profile", icon: UserRound, ready: true },
-  { to: "/become-a-tutor", label: "Become a tutor", icon: GraduationCap, ready: true },
-  { to: "/tutor-profile", label: "Tutor profile", icon: GraduationCap, ready: true },
+  // { to: "/profile", label: "My profile", icon: UserRound, ready: true },
+  {
+    to: "/become-a-tutor",
+    label: "Become a tutor",
+    icon: GraduationCap,
+    ready: true,
+  },
+  {
+    to: "/tutor-profile",
+    label: "Tutor profile",
+    icon: GraduationCap,
+    ready: true,
+  },
 ] as const;
 
 const tutorNavItems = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard, ready: true },
   { to: "/sessions", label: "My sessions", icon: Calendar, ready: true },
-  { to: "#", label: "Students", icon: UserRound, ready: false },
+  // { to: "#", label: "Students", icon: UserRound, ready: false },
   { to: "/calendar", label: "Availability", icon: Calendar, ready: true },
-  { to: "#", label: "Earnings", icon: DollarSign, ready: false },
+  // { to: "#", label: "Earnings", icon: DollarSign, ready: false },
   { to: "/messages", label: "Messages", icon: MessageSquare, ready: true },
-  { to: "/profile", label: "My profile", icon: UserRound, ready: true },
-  { to: "/tutor-profile", label: "Tutor profile", icon: GraduationCap, ready: true },
- 
+  // { to: "/profile", label: "My profile", icon: UserRound, ready: true },
+  {
+    to: "/tutor-profile",
+    label: "Tutor profile",
+    icon: GraduationCap,
+    ready: true,
+  },
 ] as const;
 
 const adminNavItems = [
@@ -76,18 +97,19 @@ export function Sidebar({
   const hasBothRoles = Boolean(user?.isStudent && user?.isTutor);
   const hasAppliedAsTutor = Boolean(user?.tutorProfile);
 
-  const navItems = (
-    activeRole === "admin"
+  const navItems = [
+    ...(activeRole === "admin"
       ? adminNavItems
       : activeRole === "tutor"
         ? tutorNavItems
         : studentNavItems
-  ).filter((item) => {
-    if (item.to === "/become-a-tutor") return !hasAppliedAsTutor;
-    if (item.to === "/tutor-profile") return hasAppliedAsTutor;
-    return true;
-  });
-
+    ).filter((item) => {
+      if (item.to === "/become-a-tutor") return !hasAppliedAsTutor;
+      if (item.to === "/tutor-profile") return hasAppliedAsTutor;
+      return true;
+    }),
+    settingsNavItem,
+  ];
   useEffect(() => {
     let isMounted = true;
 
