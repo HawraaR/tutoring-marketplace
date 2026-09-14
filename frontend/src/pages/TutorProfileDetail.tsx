@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { createBooking, fetchTutorDetail } from "../api/tutorDetailAPI";
 import type {
@@ -10,6 +10,7 @@ import type {
   TutorReview,
 } from "../types/tutor";
 import { IconVerified } from "../components/directory/icons";
+import { createConversation } from "../api/messageAPI";
 
 /* ── Local icons (stroke = currentColor) ─────────────────────────── */
 type IconProps = { className?: string };
@@ -147,7 +148,8 @@ function ReviewRow({ review }: { review: TutorReview }) {
 export function TutorProfilePage() {
   const { id = "" } = useParams();
   const { user } = useAuth();
-
+  const navigate = useNavigate(); // 👈 Add this
+  const [isMessaging, setIsMessaging] = useState(false); // 👈 Add this
   const [tutor, setTutor] = useState<TutorDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -308,7 +310,25 @@ export function TutorProfilePage() {
       setSubmitting(false);
     }
   }
-
+    const handleMessageClick = async () => {
+    if (isMessaging || !tutor) return;
+    setIsMessaging(true);
+    
+    try {
+      // Calls POST /conversations with { participantId: tutor.id }
+      // The backend automatically returns the existing conversation or creates a new one.
+      const conversation = await createConversation(tutor.id);
+      
+      // Navigate to the Messages page and pass the conversationId in the URL
+      navigate(`/messages?conversationId=${conversation.id}`);
+    } catch (error) {
+      console.error("Failed to start conversation:", error);
+      // Fallback: just go to the messages inbox if the API call fails
+      navigate("/messages");
+    } finally {
+      setIsMessaging(false);
+    }
+  };
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
@@ -356,13 +376,15 @@ export function TutorProfilePage() {
                 </div>
               </div>
             </div>
-            {!isOwn && (
-              <Link
-                to={`/messages?with=${tutor.id}`}
-                className="rounded-lg bg-brand-primary px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-white shadow-warm-sm transition-colors hover:bg-brand-primary-hover"
+                        {!isOwn && (
+              <button
+                type="button"
+                onClick={handleMessageClick}
+                disabled={isMessaging}
+                className="rounded-lg bg-brand-primary px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-white shadow-warm-sm transition-colors hover:bg-brand-primary-hover disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                Message
-              </Link>
+                {isMessaging ? "Starting chat..." : "Message"}
+              </button>
             )}
           </header>
 

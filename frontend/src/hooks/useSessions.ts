@@ -36,7 +36,7 @@ export function useSessions() {
       const rawData = res.data || [];
       console.log("Fetched sessions:", rawData);
 
-      const mappedSessions: UnifiedSession[] = rawData.map((item) => {
+      const mappedSessions = rawData.map((item) => {
         const { date, day, time, duration, endObj } = formatSessionDates(
           item.startTime,
           item.endTime,
@@ -50,8 +50,6 @@ export function useSessions() {
           computedStatus = "past";
         }
 
-        // const counterpart = isTutorMode ? item.student : item.tutor;
-        // const counterpartFullName = counterpart?.name || counterpart?.email || (isTutorMode ? "Student" : "Tutor");
         const counterpart = isTutorMode ? item.student : item.tutor;
         console.log(
           "Counterpart details:",
@@ -60,7 +58,6 @@ export function useSessions() {
           item.id,
         );
 
-        // Check for firstName / lastName first before falling back to email
         const firstName = counterpart?.firstName ?? "";
         const lastName = counterpart?.lastName ?? "";
         const fullName = `${firstName} ${lastName}`.trim();
@@ -86,8 +83,22 @@ export function useSessions() {
           status: computedStatus,
           sortDate: item.startTime,
           meetingUrl: item.meetingUrl,
-        };
-      });
+          bookingStatus: item.status,
+          review: item.review ?? null,
+          startTime: item.startTime,
+          endTime: item.endTime,
+          subject: {
+            id: item.subject?.id ?? "",
+            name: item.subject?.name ?? "Tutoring Session",
+          },
+          tutor: {
+            id: item.tutor?.id ?? "",
+            firstName: item.tutor?.firstName ?? null,
+            lastName: item.tutor?.lastName ?? null,
+            email: item.tutor?.email ?? "",
+          },
+        } as UnifiedSession;
+      }) satisfies UnifiedSession[];
 
       setSessions(mappedSessions);
     } catch (err: unknown) {
@@ -157,11 +168,13 @@ export function useSessions() {
 
   const handleAction = async (
     id: string,
-    action: "join" | "message" | "reschedule" | "cancel" | "details",
+    action: "join" | "message" | "reschedule" | "cancel" | "details" | "rate and review",
   ) => {
     const session = sessions.find((item) => item.id === id);
     if (!session) return;
-
+    if (action === "rate and review") {
+    return;
+  }
     if (action === "cancel") {
       const confirmCancel = window.confirm(
         `Are you sure you want to cancel ${session.title}?`,
@@ -225,6 +238,7 @@ export function useSessions() {
         icon: "ℹ️",
       });
     }
+
   };
 
   return {

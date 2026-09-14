@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   Menu,
@@ -10,7 +12,7 @@ import {
   Send,
   Video,
 } from "lucide-react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useSearchParams } from "react-router-dom"; // 1. Added useSearchParams
 import { useAuth } from "../context/AuthContext";
 import { firstNameFromEmail } from "../lib/displayName";
 import {
@@ -18,6 +20,14 @@ import {
   toneStyles,
   type Conversation,
 } from "../data/messages";
+
+// 2. Import your real backend APIs
+import { 
+  getConversations as fetchConversations, 
+  getMessages as fetchMessages, 
+  sendMessage as sendMessageApi,
+  markConversationRead 
+} from "../api/messageAPI";
 
 function Avatar({
   name,
@@ -31,7 +41,7 @@ function Avatar({
   return (
     <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-surface-bg text-xs font-semibold text-ink">
       <span
-        className={`absolute inset-0 rounded-sm opacity-15 ${toneStyles[tone].avatar}`}
+        className={`absolute inset-0 rounded-sm opacity-15 ${toneStyles[tone]?.avatar || ""}`}
       />
       {name
         .split(" ")
@@ -49,12 +59,102 @@ function Avatar({
 export function Messages2() {
   const { onMenuClick } = useOutletContext<{ onMenuClick: () => void }>();
   const { user } = useAuth();
-  const [conversations, setConversations] = useState(initialConversations);
-  const [selectedId, setSelectedId] = useState("layla");
+  
+  // 3. Read URL parameters
+  const [searchParams] = useSearchParams();
+  const urlConversationId = searchParams.get("conversationId");
+
+  const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
+  
+  // 4. Initialize selectedId from URL if present
+  const [selectedId, setSelectedId] = useState(urlConversationId || "layla");
+  const [showThread, setShowThread] = useState(!!urlConversationId);
+  
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState("");
-  const [showThread, setShowThread] = useState(false);
+  const [activeMessages, setActiveMessages] = useState<any[]>([]); // Holds real/mock messages for the active chat
+  
   const currentUser = firstNameFromEmail(user?.email);
+
+  // 5. React to URL changes (e.g. navigating from Tutor Details)
+  useEffect(() => {
+    const id = searchParams.get("conversationId");
+    if (id) {
+      setSelectedId(id);
+      setShowThread(true);
+    }
+  }, [searchParams]);
+
+  // 6. Fetch real conversations from backend on mount
+  useEffect(() => {
+    const loadConversations = async () => {
+      try {
+        const backendConvs = await fetchConversations();
+        
+        // Map backend response to your UI Conversation type
+        const mappedConvs: Conversation[] = backendConvs.map((c: any) => {
+          const other = c.participants.find((p: any) => p.userId !== user?.id)?.user;
+          const name = other ? `${other.firstName || ""} ${other.lastName || ""}`.trim() || other.email : "Unknown";
+          const lastMsg = c.messages?.[0];
+          
+          return {
+            id: c.id,
+            name,
+            course: other?.isTutor ? "Tutoring" : "Peer Chat",
+            role: other?.isTutor ? "Tutor" : "Peer",
+            tone: "olive", // Ensure this matches a key in your toneStyles
+            online: false,
+            updated: lastMsg ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Now",
+            preview: lastMsg?.text || "Start of conversation",
+            unread: c.unreadCount || 0,
+            messages: [] // We load these separately when the chat is clicked
+          };
+        });
+
+        // Merge backend conversations with your mock data
+        setConversations((prev) => {
+          const existingIds = new Set(prev.map((p) => p.id));
+          const newConvs = mappedConvs.filter((c) => !existingIds.has(c.id));
+          return [...prev, ...newConvs];
+        });
+      } catch (error) {
+        console.error("Failed to load conversations:", error);
+      }
+    };
+
+    if (user?.id) loadConversations();
+  }, [user?.id]);
+
+  // 7. Fetch messages when a conversation is selected
+  useEffect(() => {
+    if (!selectedId || selectedId === "layla") {
+       // If it's the mock "layla" conversation, use mock messages
+       const mockConv = conversations.find(c => c.id === "layla");
+       setActiveMessages(mockConv?.messages || []);
+       return;
+    }
+
+    const loadMessages = async () => {
+      try {
+        const msgs = await fetchMessages(selectedId);
+        const mappedMsgs = msgs.map((m: any) => ({
+          id: m.id,
+          text: m.text,
+          time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          own: m.senderId === user?.id
+        }));
+        setActiveMessages(mappedMsgs);
+        
+        // Mark as read
+        await markConversationRead(selectedId);
+      } catch (error) {
+        console.error("Failed to load messages:", error);
+      }
+    };
+    
+    loadMessages();
+  }, [selectedId, user?.id]);
+
   const currentConversation =
     conversations.find(({ id }) => id === selectedId) ?? conversations[0];
 
@@ -76,30 +176,62 @@ export function Messages2() {
     );
   };
 
-  const sendMessage = () => {
+  // 8. Send message using API
+  const sendMessage = async () => {
     const text = draft.trim();
-    if (!text) return;
-    setConversations((items) =>
-      items.map((item) =>
-        item.id === selectedId
-          ? {
-              ...item,
-              preview: text,
-              updated: "now",
-              messages: [
-                ...item.messages,
-                {
-                  id: `${item.id}-${Date.now()}`,
-                  text,
-                  time: "now",
-                  own: true,
-                },
-              ],
-            }
-          : item,
-      ),
-    );
+    if (!text || !currentConversation) return;
+
+    // Optimistic UI update (show message immediately before API responds)
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMsg = {
+      id: tempId,
+      text,
+      time: "now",
+      own: true,
+    };
+    setActiveMessages((prev) => [...prev, optimisticMsg]);
     setDraft("");
+
+    try {
+      if (selectedId === "layla") {
+        // Mock behavior for the hardcoded conversation
+        setConversations((items) =>
+          items.map((item) =>
+            item.id === selectedId
+              ? { ...item, preview: text, updated: "now", messages: [...item.messages, optimisticMsg] }
+              : item,
+          ),
+        );
+      } else {
+        // Real API call
+        const sentMsg = await sendMessageApi(selectedId, text);
+        
+        // Update active messages with the real ID and time
+        setActiveMessages((prev) =>
+          prev.map((m) =>
+            m.id === tempId
+              ? {
+                  ...m,
+                  id: sentMsg.id,
+                  time: new Date(sentMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                }
+              : m,
+          ),
+        );
+
+        // Update sidebar preview
+        setConversations((items) =>
+          items.map((item) =>
+            item.id === selectedId
+              ? { ...item, preview: text, updated: "now" }
+              : item,
+          ),
+        );
+      }
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      // Optionally remove optimistic message on failure
+    }
   };
 
   return (
@@ -108,6 +240,7 @@ export function Messages2() {
         <aside
           className={`${showThread ? "hidden md:flex" : "flex"} w-full shrink-0 flex-col border-r border-border-subtle md:w-[290px] lg:w-[320px]`}
         >
+          {/* ... Sidebar Header and Search (Unchanged) ... */}
           <div className="border-b border-border-subtle p-3">
             <div className="flex items-center gap-2">
               <button
@@ -171,7 +304,7 @@ export function Messages2() {
                     </span>
                   </span>
                   <span
-                    className={`mt-0.5 block text-[11px] ${toneStyles[conversation.tone].label}`}
+                    className={`mt-0.5 block text-[11px] ${toneStyles[conversation.tone]?.label || ""}`}
                   >
                     {conversation.role} · {conversation.course.split(" · ")[0]}
                   </span>
@@ -220,27 +353,9 @@ export function Messages2() {
               </div>
             </div>
             <div className="flex items-center gap-1 text-muted">
-              <button
-                type="button"
-                aria-label="Start video call"
-                className="rounded-sm p-2 hover:bg-surface-bg hover:text-ink"
-              >
-                <Video className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                aria-label="Start audio call"
-                className="rounded-sm p-2 hover:bg-surface-bg hover:text-ink"
-              >
-                <Phone className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                aria-label="More conversation options"
-                className="rounded-sm p-2 hover:bg-surface-bg hover:text-ink"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </button>
+              <button type="button" aria-label="Start video call" className="rounded-sm p-2 hover:bg-surface-bg hover:text-ink"><Video className="h-4 w-4" /></button>
+              <button type="button" aria-label="Start audio call" className="rounded-sm p-2 hover:bg-surface-bg hover:text-ink"><Phone className="h-4 w-4" /></button>
+              <button type="button" aria-label="More conversation options" className="rounded-sm p-2 hover:bg-surface-bg hover:text-ink"><MoreHorizontal className="h-4 w-4" /></button>
             </div>
           </header>
 
@@ -250,7 +365,9 @@ export function Messages2() {
               Today
               <span className="h-px flex-1 bg-border-subtle" />
             </div>
-            {currentConversation.messages.map((message) => (
+            
+            {/* 9. CHANGED: Render activeMessages instead of currentConversation.messages */}
+            {activeMessages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.own ? "justify-end" : "justify-start"}`}
@@ -282,13 +399,7 @@ export function Messages2() {
             className="border-t border-border-subtle bg-surface-card p-3 md:p-4"
           >
             <div className="flex items-end gap-2 rounded-sm border border-border-subtle bg-surface-bg p-1.5 focus-within:border-brand-primary">
-              <button
-                type="button"
-                aria-label="Attach a file"
-                className="mb-0.5 rounded-sm p-2 text-muted hover:bg-surface-card hover:text-ink"
-              >
-                <Paperclip className="h-4 w-4" />
-              </button>
+              <button type="button" aria-label="Attach a file" className="mb-0.5 rounded-sm p-2 text-muted hover:bg-surface-card hover:text-ink"><Paperclip className="h-4 w-4" /></button>
               <textarea
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}

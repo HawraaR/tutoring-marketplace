@@ -32,6 +32,11 @@ export interface Booking {
     name: string;
     code?: string;
   };
+  review?: {
+    id: string;
+    rating: number;
+    comment: string;
+  } | null;
 }
 
 // UI ViewModel for the Sessions page
@@ -49,6 +54,7 @@ export interface Session {
   mode: string;
   note?: string;
   status: SessionStatus;
+  bookingStatus: BookingStatus;
   sortDate: string;
   tone?: "slate" | "olive" | "amber";
   meetingUrl?: string;
@@ -68,10 +74,20 @@ export interface UnifiedSession {
   mode: string;
   note?: string;
   status: SessionStatus;
+  bookingStatus: BookingStatus;
   sortDate: string;
   tone?: "slate" | "olive" | "amber";
   meetingUrl?: string;
-  review?: { id: string; rating: number; comment: string } | null;
+  review: { id: string; rating: number; comment: string } | null;
+  startTime: string;
+  endTime: string;
+  subject: { id: string; name: string };
+  tutor: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+  };
   // Ensure you also have the raw booking ID available to send to the backend
   bookingId?: string; 
 }

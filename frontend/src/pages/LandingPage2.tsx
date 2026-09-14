@@ -4,7 +4,6 @@ import {
   BookOpen,
   CheckCircle,
   Clock3,
-  GraduationCap,
   Search,
   Shield,
   Sparkles,
@@ -60,12 +59,11 @@ export const LandingPage2: React.FC = () => {
             className="flex items-center gap-2"
             aria-label="AcademiConnect home"
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-sm bg-brand-primary shadow-sm">
-              <GraduationCap className="h-5 w-5 text-white" />
-            </span>
-            <span className="hidden text-xl font-bold tracking-tight sm:inline-block">
-              AcademiConnect
-            </span>
+          
+          <div className="relative z-10 flex items-center gap-2">
+            <span className="text-2xl text-blue-200">✦</span>
+            <span className="font-serif text-2xl font-bold  text-blue-700">Tutorium</span>
+          </div>
           </Link>
           <form
             onSubmit={handleSearch}

@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Clock3, MessageCircle, MoreHorizontal, Star, Video } from "lucide-react";
+import { CheckCircle2, Clock3, MessageCircle, MoreHorizontal, Video } from "lucide-react";
 import { CourseLabel } from "../../components/dashboard/CourseLabel";
 import { STATUS_STYLES } from "../../lib/utils/sessionHelpers";
-import type { Booking, UnifiedSession } from "../../types";
-import { useState } from "react";
-import { ReviewModal } from "./ReviewModel";
+import type { UnifiedSession } from "../../types";
+import { SessionReviewEntry } from "./sessionReviewEntry";
+import { isSessionPast } from "../review/reviewCriteria";
 
 interface SessionRowProps {
   session: UnifiedSession;
   isTutorMode: boolean;
   onAction: (
     id: string,
-    action: "join" | "message" | "reschedule" | "cancel" | "details",
+    action: "join" | "message" | "reschedule" | "cancel" | "details" | "rate and review",
   ) => void;
   onReviewSubmitted?: () => void; 
 }
@@ -23,12 +23,6 @@ export function SessionRow({
   onReviewSubmitted,
 }: SessionRowProps) {
   const dayNumber = new Date(session.sortDate).getDate();
-  const[reviewTarget, setReviewTarget] = useState<UnifiedSession|null>(null);
-
-  const handleReviewSubmitted = () => {
-    setReviewTarget(null);
-    onReviewSubmitted?.();
-  };
 
   return (
       <>
@@ -123,26 +117,17 @@ export function SessionRow({
               </>
             ) : session.status === "past" ? (
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                {/* Show Rate & Review button only for students who haven't reviewed */}
-                {!isTutorMode && !session.review && (
-                  <button
-                    type="button"
-                    onClick={() => setReviewTarget(session)}
-                    className="inline-flex items-center gap-1.5 rounded-sm bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-600 hover:bg-amber-500/20"
-                  >
-                    <Star className="h-3.5 w-3.5" fill="currentColor" />
-                    Rate & Review
-                  </button>
+                {!isTutorMode &&
+                  session.bookingStatus !== "CANCELLED" &&
+                  isSessionPast(session.endTime) &&
+                  !session.review && (
+                  <SessionReviewEntry session={session} onReviewed={onReviewSubmitted} />
                 )}
-
-                {/* Show "Reviewed" badge if they already did */}
                 {!isTutorMode && session.review && (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-olive">
-                    <Star className="h-3.5 w-3.5" fill="currentColor" />
-                    Reviewed ({session.review.rating}★)
+                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-olive">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Reviewed
                   </span>
                 )}
-
                 <button
                   type="button"
                   onClick={() => onAction(session.id, "message")}
@@ -158,13 +143,7 @@ export function SessionRow({
           </div>
         </div>
       </article>
-      {reviewTarget && (
-        <ReviewModal
-          session={reviewTarget}
-          onClose={() => setReviewTarget(null)}
-          onSubmitted={handleReviewSubmitted}
-        />
-      )}
+      
     </>
     
   );
