@@ -7,19 +7,59 @@ export const createBooking = async (req: Request, res: Response) => {
     const studentId = (req as any).user.userId;
     const { availabilitySlotId, subjectId, notes } = req.body;
 
-    const slot = await prisma.availabilitySlot.findUnique({
-      where: { id: availabilitySlotId },
-      include: { tutor: { include: { tutorProfile: true } } },
-    });
-
-    if (!slot || slot.isBooked) {
+    if (!availabilitySlotId || !subjectId) {
       return res
         .status(400)
-        .json({ error: "This slot is no longer available." });
+        .json({ error: "availabilitySlotId and subjectId are required." });
     }
 
-    const [booking] = await prisma.$transaction([
-      prisma.booking.create({
+    const slot = await prisma.availabilitySlot.findUnique({
+      where: { id: availabilitySlotId },
+      include: {
+        tutor: { include: { tutorProfile: true } },
+        booking: true,
+      },
+    });
+
+    if (!slot || slot.isBooked || (slot.booking && slot.booking.status !== "CANCELLED")) {
+      return res.status(400).json({ error: "This slot is no longer available." });
+    }
+    if (new Date(slot.startTime).getTime() <= Date.now()) {
+      return res.status(400).json({ error: "This slot is in the past." });
+    }
+    if (slot.tutorId === studentId) {
+      return res.status(400).json({ error: "You cannot book your own availability." });
+    }
+
+    const teachesSubject = await prisma.tutorSubject.findUnique({
+      where: { tutorId_subjectId: { tutorId: slot.tutorId, subjectId } },
+    });
+    if (!teachesSubject) {
+      return res
+        .status(400)
+        .json({ error: "This tutor does not teach the selected subject." });
+    }
+
+    const booking = await prisma.$transaction(async (tx) => {
+      if (slot.booking?.status === "CANCELLED") {
+        await tx.booking.update({
+          where: { id: slot.booking.id },
+          data: { availabilitySlotId: null },
+        });
+      }
+
+      // Atomic lock: fails if another request booked the slot milliseconds ago
+      const locked = await tx.availabilitySlot.updateMany({
+        where: { id: slot.id, isBooked: false },
+        data: { isBooked: true },
+      });
+      if (locked.count === 0) throw new Error("SLOT_TAKEN");
+
+      const rate = slot.tutor.tutorProfile?.hourlyRate || 0;
+      const hours =
+        (new Date(slot.endTime).getTime() - new Date(slot.startTime).getTime()) / 3_600_000;
+
+      return tx.booking.create({
         data: {
           studentId,
           tutorId: slot.tutorId,
@@ -28,24 +68,29 @@ export const createBooking = async (req: Request, res: Response) => {
           startTime: slot.startTime,
           endTime: slot.endTime,
           notes,
-          totalPrice: slot.tutor.tutorProfile?.hourlyRate || 0,
+          totalPrice: Math.round(rate * hours * 100) / 100, // <- duration-aware price
           status: "PENDING",
         },
-      }),
-      prisma.availabilitySlot.update({
-        where: { id: slot.id },
-        data: { isBooked: true },
-      }),
-    ]);
+      });
+    });
 
-    return res
-      .status(201)
-      .json({ message: "Booking requested successfully", booking });
+    return res.status(201).json({
+      message: "Booking requested successfully",
+      data: booking,   // ApiResponse shape used by the frontend client
+      booking,         // kept for backward compatibility
+    });
   } catch (error: any) {
-    // 1. Print full stack trace in your backend terminal
+    if (error?.message === "SLOT_TAKEN") {
+      return res
+        .status(409)
+        .json({ error: "This slot was just booked by someone else." });
+    }
+    if (error?.code === "P2002" && error?.meta?.target?.includes("availabilitySlotId")) {
+      return res
+        .status(409)
+        .json({ error: "This slot is no longer available." });
+    }
     console.error("DEBUG - Create Booking Error:", error);
-
-    // 2. Temporarily return the specific error message to REST Client
     return res.status(500).json({
       error: "Failed to create booking.",
       details: error?.message || error,
@@ -130,7 +175,10 @@ export const updateBookingStatus = async (
     let updated;
     if (status === "CANCELLED" && booking.availabilitySlotId) {
       [updated] = await prisma.$transaction([
-        prisma.booking.update({ where: { id: bookingId }, data: { status: "CANCELLED" } }),
+        prisma.booking.update({
+          where: { id: bookingId },
+          data: { status: "CANCELLED", availabilitySlotId: null },
+        }),
         prisma.availabilitySlot.update({ where: { id: booking.availabilitySlotId }, data: { isBooked: false } }),
       ]);
     } else {

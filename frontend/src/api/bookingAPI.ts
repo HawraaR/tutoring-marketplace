@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {api} from "./axios"; // Your configured Axios instance
 import type {
   Booking,
@@ -23,8 +24,12 @@ export const getUserBookings = async (): Promise<Booking[]> => {
 export const createBooking = async (
   payload: CreateBookingPayload
 ): Promise<Booking> => {
-  const response = await api.post<ApiResponse<Booking>>("/bookings", payload);
-  return response.data.data;
+  const response = await api.post<ApiResponse<Booking> | { booking: Booking }>(
+    "/bookings",
+    payload
+  );
+  const body = response.data as any;
+  return body.data ?? body.booking;
 };
 
 /**

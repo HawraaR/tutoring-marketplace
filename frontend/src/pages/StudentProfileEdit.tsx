@@ -1,8 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Card, Input, Button } from "../components/ui";
-import { getMyStudentProfile, updateMyStudentProfile } from "../api/studentProfileAPI";
+import {
+  getMyStudentProfile,
+  updateMyStudentProfile,
+} from "../api/studentProfileAPI";
 import { getSubjects } from "../api/subjectAPI";
 import type { Subject } from "../types";
+import toast from "react-hot-toast";
+
 
 export function StudentProfileEdit() {
   const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
@@ -12,8 +17,8 @@ export function StudentProfileEdit() {
   const [educationLevel, setEducationLevel] = useState("");
   const [major, setMajor] = useState("");
   const [learningGoals, setLearningGoals] = useState("");
-  const [learningStyle, setLearningStyle] = useState("");
-  const [timezone, setTimezone] = useState("");
+  // const [learningStyle, setLearningStyle] = useState("");
+  // const [timezone, setTimezone] = useState("");
   const [preferredLanguage, setPreferredLanguage] = useState("");
   const [maxHourlyRate, setMaxHourlyRate] = useState("");
 
@@ -29,10 +34,12 @@ export function StudentProfileEdit() {
         setEducationLevel(profile.educationLevel ?? "");
         setMajor(profile.major ?? "");
         setLearningGoals(profile.learningGoals ?? "");
-        setLearningStyle(profile.learningStyle ?? "");
-        setTimezone(profile.timezone ?? "");
+        // setLearningStyle(profile.learningStyle ?? "");
+        // setTimezone(profile.timezone ?? "");
         setPreferredLanguage(profile.preferredLanguage ?? "");
-        setMaxHourlyRate(profile.maxHourlyRate != null ? String(profile.maxHourlyRate) : "");
+        setMaxHourlyRate(
+          profile.maxHourlyRate != null ? String(profile.maxHourlyRate) : "",
+        );
       })
       .catch(() => setErrorMessages(["Failed to load your profile."]))
       .finally(() => setLoading(false));
@@ -66,18 +73,22 @@ export function StudentProfileEdit() {
         major: major || undefined,
         learningGoals: learningGoals || undefined,
         preferredSubjectIds: selectedSubjectIds,
-        learningStyle: learningStyle || undefined,
-        timezone: timezone || undefined,
+        // learningStyle: learningStyle || undefined,
+        // timezone: timezone || undefined,
         preferredLanguage: preferredLanguage || undefined,
         maxHourlyRate: maxHourlyRate ? Number(maxHourlyRate) : undefined,
       });
       setSaved(true);
+      toast.success(`Student Profile updated successfully.`);
     } catch (error: any) {
       const details = error?.response?.data?.details;
       if (Array.isArray(details)) {
         setErrorMessages(details.map((d: { message: string }) => d.message));
       } else {
-        setErrorMessages([error?.response?.data?.error || "Failed to update profile."]);
+        setErrorMessages([
+          error?.response?.data?.error || "Failed to update profile.",
+        ]);
+        toast.error("Something went wrong. Please try again.");
       }
     } finally {
       setIsSaving(false);
@@ -85,18 +96,21 @@ export function StudentProfileEdit() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div>
       <Card>
-        <h1 className="font-serif text-2xl font-semibold text-ink">My profile</h1>
+        <h1 className="font-serif text-2xl font-semibold text-ink">
+          Student Information
+        </h1>
         <p className="mt-1 text-sm text-muted">
           Tell us about yourself so we can match you with the right tutors.
         </p>
 
-        {saved && (
-          <p className="mt-4 rounded-sm border border-border-subtle bg-surface-bg p-3 text-sm text-ink">
+        {/* {saved && (
+          <p className="mt-4 rounded-sm border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800">
+            {" "}
             Profile updated.
           </p>
-        )}
+        )} */}
         {errorMessages.length > 0 && (
           <div className="mt-4 rounded-sm border border-error/30 bg-error/5 p-3">
             {errorMessages.map((message) => (
@@ -121,7 +135,9 @@ export function StudentProfileEdit() {
             onChange={(e) => setMajor(e.target.value)}
           />
           <div>
-            <label className="mb-1 block text-sm font-medium text-ink">Learning goals</label>
+            <label className="mb-1 block text-sm font-medium text-ink">
+              Learning goals
+            </label>
             <textarea
               className="w-full rounded-sm border border-border-subtle bg-surface-card px-3.5 py-2.5 text-sm text-ink outline-none placeholder:text-muted focus:border-brand-primary"
               rows={4}
@@ -160,18 +176,18 @@ export function StudentProfileEdit() {
             )}
           </div>
 
-          <Input
+          {/* <Input
             label="Learning style"
             placeholder="e.g. Visual, Exam Prep, Project-Based"
             value={learningStyle}
             onChange={(e) => setLearningStyle(e.target.value)}
-          />
-          <Input
+          /> */}
+          {/* <Input
             label="Timezone"
             placeholder="e.g. Asia/Beirut"
             value={timezone}
             onChange={(e) => setTimezone(e.target.value)}
-          />
+          /> */}
           <Input
             label="Preferred language"
             placeholder="e.g. English, Arabic"

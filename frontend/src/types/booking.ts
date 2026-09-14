@@ -106,3 +106,32 @@ export interface CreateBookingPayload {
 export interface UpdateBookingStatusPayload {
   status: BookingStatus;
 }
+
+// ── Booking modal: enriched open slot from GET /availability/open ──────────
+export interface OpenSlotSubject {
+  id: string;
+  name: string;
+}
+
+export interface OpenSlotTutorProfile {
+  hourlyRate: number;
+  averageRating: number;
+  reviewCount: number;
+  headline: string | null;
+}
+
+export interface OpenSlot {
+  id: string;
+  tutorId: string;
+  startTime: string; // ISO
+  endTime: string;   // ISO
+  isBooked: boolean;
+  tutor: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+    tutorProfile: OpenSlotTutorProfile | null;
+    tutorSubjects: { subject: OpenSlotSubject }[];
+  };
+}

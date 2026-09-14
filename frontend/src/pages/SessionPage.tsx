@@ -1,10 +1,13 @@
-import toast from "react-hot-toast";
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 import { CalendarDays } from "lucide-react";
 import { useSessions } from "../hooks/useSessions";
 import { SessionControls } from "../components/sessions/SessionControls";
 import { SessionRow } from "../components/sessions/SessionRow";
+import { useState } from "react";
+import { BookingModal } from "../components/sessions/sessionBookingModel";
 
 export function SessionPage() {
+  const [bookingOpen, setBookingOpen] = useState(false);
   const {
     loading,
     activeTab,
@@ -38,7 +41,7 @@ export function SessionPage() {
         {!isTutorMode && (
           <button
             type="button"
-            onClick={() => toast("Booking flow will open when the tutor directory is connected.", { icon: "ℹ️" })}
+            onClick={() => setBookingOpen(true)}
             className="inline-flex items-center justify-center gap-2 rounded-sm bg-brand-primary px-3 py-2 text-sm font-medium text-white hover:bg-brand-primary-hover"
           >
             <CalendarDays className="h-4 w-4" />
@@ -88,8 +91,16 @@ export function SessionPage() {
                 : "Try another subject filter or book a new tutoring session."}
             </p>
           </div>
+          
         )}
       </section>
+      {bookingOpen && (
+        <BookingModal
+          onClose={() => setBookingOpen(false)}
+          onBooked={refreshSessions}
+        />
+      )}
     </div>
   );
+  
 }

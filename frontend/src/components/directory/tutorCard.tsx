@@ -1,7 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // src/components/tutors/TutorCard.tsx
 import type { TutorListItem } from "../../types/tutor";
 import { nextAvailableSlot } from "../../lib/directory/tutorFilters";
 import { IconStar, IconVerified } from "./icons";
+// 1) imports at top
+import { useState } from "react";
+import { BookingModal } from "./bookingModal";
 
 const AVATAR_COLORS = [
   "bg-slate-blue",
@@ -95,7 +99,7 @@ function Price({
   );
 }
 
-function Actions({ tutor }: { tutor: TutorListItem }) {
+function Actions({ tutor, onBook }: { tutor: TutorListItem, onBook: () => void }) {
   return (
     <div className="flex items-center gap-2">
       <a
@@ -104,12 +108,12 @@ function Actions({ tutor }: { tutor: TutorListItem }) {
       >
         Details
       </a>
-      <a
-        href={`/tutors/${tutor.id}/book`}
+      <button
+        type="button" onClick={onBook}
         className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-semibold text-white shadow-warm-sm transition-colors hover:bg-brand-primary-hover"
       >
         Book Now
-      </a>
+      </button>
     </div>
   );
 }
@@ -140,81 +144,92 @@ export function TutorCard({
   view: "grid" | "list";
 }) {
   const p = tutor.tutorProfile;
+  const [bookingOpen, setBookingOpen] = useState(false);
   if (!p) return null;
-
+  const openBooking = () => setBookingOpen(true);
+  const closeBooking = () => setBookingOpen(false);
+  const modal = bookingOpen ? (
+    <BookingModal tutor={tutor} onClose={closeBooking} />
+  ) : null;
   if (view === "list") {
     return (
-      <article className="flex flex-col gap-5 rounded-0 border border-border-subtle bg-surface-card p-5 shadow-warm-sm transition-shadow hover:shadow-warm md:flex-row">
-        <div className="flex min-w-0 flex-1 gap-4">
+      <>
+        <article className="flex flex-col gap-5 rounded-0 border border-border-subtle bg-surface-card p-5 shadow-warm-sm transition-shadow hover:shadow-warm md:flex-row">
+          <div className="flex min-w-0 flex-1 gap-4">
+            <div
+              className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-semibold text-white ${avatarColor(tutor)}`}
+            >
+              {initials(tutor)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <NameRow tutor={tutor} />
+              {p.education && (
+                <p className="mt-0.5 truncate text-sm text-muted">
+                  {p.education}
+                </p>
+              )}
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <Rating tutor={tutor} />
+                <AvailabilityHint tutor={tutor} />
+              </div>
+              <div className="mt-3">
+                <SubjectChips tutor={tutor} />
+              </div>
+              <p className="mt-3 line-clamp-2 text-sm text-muted">
+                {p.headline ?? p.bio}
+              </p>
+              <p className="mt-1 text-xs text-muted">
+                Speaks: {p.languages.join(", ")}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-3 border-t border-border-subtle pt-4 md:w-52 md:flex-col md:items-end md:border-l md:border-t-0 md:pl-5 md:pt-0">
+            <Price tutor={tutor} size="lg" />
+            <Actions tutor={tutor} onBook={openBooking}/>
+          </div>
+        </article>
+        {modal}
+      </>
+    );
+  }
+  // Grid view
+  return (
+    <>
+      <article className="flex flex-col  border border-border-subtle bg-surface-card p-5 shadow-warm-sm transition-shadow hover:shadow-warm">
+        <header className="flex items-start gap-3">
           <div
-            className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-semibold text-white ${avatarColor(tutor)}`}
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full font-semibold text-white ${avatarColor(tutor)}`}
           >
             {initials(tutor)}
           </div>
           <div className="min-w-0 flex-1">
             <NameRow tutor={tutor} />
             {p.education && (
-              <p className="mt-0.5 truncate text-sm text-muted">
-                {p.education}
-              </p>
+              <p className="mt-0.5 truncate text-sm text-muted">{p.education}</p>
             )}
-            <div className="mt-2 flex flex-wrap items-center gap-3">
+            <div className="mt-1.5">
               <Rating tutor={tutor} />
-              <AvailabilityHint tutor={tutor} />
             </div>
-            <div className="mt-3">
-              <SubjectChips tutor={tutor} />
-            </div>
-            <p className="mt-3 line-clamp-2 text-sm text-muted">
-              {p.headline ?? p.bio}
-            </p>
-            <p className="mt-1 text-xs text-muted">
-              Speaks: {p.languages.join(", ")}
-            </p>
+          </div>
+        </header>
+
+        <div className="mt-4 flex-1">
+          <SubjectChips tutor={tutor} />
+          <p className="mt-3 line-clamp-2 text-sm text-muted">
+            {p.headline ?? p.bio}
+          </p>
+          <div className="mt-3">
+            <AvailabilityHint tutor={tutor} />
           </div>
         </div>
-        <div className="flex items-center justify-between gap-3 border-t border-border-subtle pt-4 md:w-52 md:flex-col md:items-end md:border-l md:border-t-0 md:pl-5 md:pt-0">
-          <Price tutor={tutor} size="lg" />
-          <Actions tutor={tutor} />
-        </div>
+
+        <footer className="mt-4 flex items-center justify-between gap-3 border-t border-border-subtle pt-4">
+          <Price tutor={tutor} />
+          <Actions tutor={tutor} onBook={openBooking} />
+        </footer>
       </article>
-    );
-  }
-
-  // Grid view
-  return (
-    <article className="flex flex-col  border border-border-subtle bg-surface-card p-5 shadow-warm-sm transition-shadow hover:shadow-warm">
-      <header className="flex items-start gap-3">
-        <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full font-semibold text-white ${avatarColor(tutor)}`}
-        >
-          {initials(tutor)}
-        </div>
-        <div className="min-w-0 flex-1">
-          <NameRow tutor={tutor} />
-          {p.education && (
-            <p className="mt-0.5 truncate text-sm text-muted">{p.education}</p>
-          )}
-          <div className="mt-1.5">
-            <Rating tutor={tutor} />
-          </div>
-        </div>
-      </header>
-
-      <div className="mt-4 flex-1">
-        <SubjectChips tutor={tutor} />
-        <p className="mt-3 line-clamp-2 text-sm text-muted">
-          {p.headline ?? p.bio}
-        </p>
-        <div className="mt-3">
-          <AvailabilityHint tutor={tutor} />
-        </div>
-      </div>
-
-      <footer className="mt-4 flex items-center justify-between gap-3 border-t border-border-subtle pt-4">
-        <Price tutor={tutor} />
-        <Actions tutor={tutor} />
-      </footer>
-    </article>
+      {modal}
+    </>
+    
   );
 }

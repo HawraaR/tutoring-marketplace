@@ -4,6 +4,7 @@ import type { StudentProfile, StudentProfileInput } from "../types";
 // GET /students/me — the logged-in user's own student profile
 export const getMyStudentProfile = async (): Promise<{ profile: StudentProfile }> => {
   const response = await api.get("/students/me");
+  console.log("getMyStudentProfile response:", response.data); // Log the response data
   return response.data;
 };
 
