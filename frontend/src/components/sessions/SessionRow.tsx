@@ -2,6 +2,9 @@
 import { CheckCircle2, Clock3, MessageCircle, MoreHorizontal, Video } from "lucide-react";
 import { CourseLabel } from "../../components/dashboard/CourseLabel";
 import { STATUS_STYLES } from "../../lib/utils/sessionHelpers";
+import type {  UnifiedSession } from "../../types";
+import { useState } from "react";
+import { ReviewModal } from "./ReviewModel";
 import type { UnifiedSession } from "../../types";
 import { SessionReviewEntry } from "./sessionReviewEntry";
 import { isSessionPast } from "../review/reviewCriteria";
