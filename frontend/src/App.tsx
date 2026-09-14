@@ -12,9 +12,10 @@ import { UserManagement } from "./pages/UserManagement";
 import { TutorApprovals } from "./pages/TutorApprovals";
 import { SessionPage } from "./pages/SessionPage";
 import { AppLayout, AuthLayout } from "./layouts";
-import { Messages } from "./pages/Messages";
+// import { Messages } from "./pages/Messages";
+import { MessagesIO } from "./pages/MessagesIO";
 // import { Calendar } from "./pages/Calendar";
-import {CalendarV2}  from "./pages/CalendarV2";
+import { CalendarV2 } from "./pages/CalendarV2";
 import LandingPage from "./pages/LandingPage2";
 import Directory from "./pages/TutorDirectory";
 import TutoringReqs from "./pages/TutoringReqs";
@@ -22,10 +23,36 @@ import { TutorApplication } from "./pages/TutorApplication";
 import { TutorProfileEdit } from "./pages/TutorProfileEdit";
 import TutorProfileDetail from "./pages/TutorProfileDetail";
 import { StudentProfileEdit } from "./pages/StudentProfileEdit";
-import {Settings} from "./pages/Settings"; 
+import { Settings } from "./pages/Settings";
+import { io } from "socket.io-client";
 
 const DashboardRedirect: React.FC = () => {
   const { user, activeRole } = useAuth();
+
+  //socket
+
+  // Get your JWT token from localStorage or your auth state
+  const token = localStorage.getItem("token");
+  console.log("token", token )
+
+  const socket = io("http://localhost:5000", {
+    auth: {
+      token: token,
+    },
+  });
+
+  socket.on("connect", () => {
+    console.log("🟢 Socket connected successfully! Socket ID:", socket.id);
+  });
+
+  socket.on("connect_error", (err) => {
+    console.error("🔴 Socket connection failed:", err.message);
+  });
+
+  socket.on("disconnect", (reason) => {
+    console.warn("⚠️ Socket disconnected:", reason);
+  });
+  //
 
   if (user?.isAdmin) {
     return <AdminD />;
@@ -56,7 +83,8 @@ export const App: React.FC = () => {
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<DashboardRedirect />} />
               <Route path="/sessions" element={<SessionPage />} />
-              <Route path="/messages" element={<Messages />} />
+              {/* <Route path="/messages" element={<Messages />} /> */}
+              <Route path="/messages" element={<MessagesIO />} />
               <Route path="/calendar" element={<CalendarV2 />} />
               <Route path="/directory" element={<Directory />} />
               <Route path="/tutors/:id" element={<TutorProfileDetail />} />

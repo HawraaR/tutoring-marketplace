@@ -131,15 +131,15 @@ export function Sidebar({
     };
 
     void refreshUnreadMessages();
-    const interval = window.setInterval(
-      () => void refreshUnreadMessages(),
-      5000,
-    );
+    // const interval = window.setInterval(
+    //   () => void refreshUnreadMessages(),
+    //   5000,
+    // );
 
-    return () => {
-      isMounted = false;
-      window.clearInterval(interval);
-    };
+    // return () => {
+    //   isMounted = false;
+    //   window.clearInterval(interval);
+    // };
   }, [user?.id, activeRole]);
 
   const switchRole = (role: "student" | "tutor") => {

@@ -55,6 +55,7 @@ interface Spec {
   lastName: string;
   rate: number;
   education?: string;
+  videoIntroUrl?: string;
   headline?: string;
   bio?: string;
   languages?: string[];
@@ -77,6 +78,7 @@ function makeTutor(t: Spec): TutorListItem {
       headline: t.headline ?? null,
       bio: t.bio ?? null,
       hourlyRate: t.rate,
+      videoIntroUrl: t.videoIntroUrl ?? "",
       education: t.education ?? null,
       languages: t.languages ?? ["English"],
       verificationStatus: t.status ?? "APPROVED",

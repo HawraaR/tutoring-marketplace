@@ -191,6 +191,8 @@ model Message {
   conversationId String
   senderId       String
   text           String
+  attachments    String[]     @default([])
+
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   deletedAt      DateTime?
@@ -201,6 +203,7 @@ model Message {
   @@index([conversationId, createdAt])
   @@index([senderId])
 }
+
 
 model Review {
   id        String   @id @default(uuid())

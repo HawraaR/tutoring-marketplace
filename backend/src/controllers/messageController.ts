@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { prisma } from "../db";
 
-const getUserId = (req: Request): string | undefined => (req as any).user?.userId;
+const getUserId = (req: Request): string | undefined =>
+  (req as any).user?.userId;
 
 const participantSelect = {
   user: {
@@ -16,22 +17,42 @@ const participantSelect = {
   },
 };
 
-const getAuthorizedConversation = async (conversationId: string, userId: string) => {
+const getAuthorizedConversation = async (
+  conversationId: string,
+  userId: string,
+) => {
   const conversation = await prisma.conversation.findUnique({
     where: { id: conversationId },
-    select: { id: true, participants: { select: { userId: true } } },
+    select: {
+      id: true,
+      participants: {
+        select: { userId: true },
+      },
+    },
   });
 
-  if (!conversation) return { status: 404 as const };
-  if (!conversation.participants.some((participant) => participant.userId === userId)) {
-    return { status: 403 as const };
+  if (!conversation) return { status: 404 as const, conversation: null };
+
+  const isParticipant = conversation.participants.some(
+    (participant) => participant.userId === userId,
+  );
+
+  if (!isParticipant) {
+    return { status: 403 as const, conversation: null };
   }
+
   return { status: 200 as const, conversation };
 };
 
-export const getConversations = async (req: Request, res: Response) => {
+export const getConversations = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   const userId = getUserId(req);
-  if (!userId) return res.status(401).json({ error: "Authentication required." });
+  if (!userId) {
+    res.status(401).json({ error: "Authentication required." });
+    return;
+  }
 
   try {
     const conversations = await prisma.conversation.findMany({
@@ -49,7 +70,6 @@ export const getConversations = async (req: Request, res: Response) => {
     });
 
     // Single grouped query to count unread messages for all conversations
-    // (eliminates the N+1 problem of one count query per conversation)
     const unreadCounts = await prisma.message.groupBy({
       by: ["conversationId"],
       where: {
@@ -70,19 +90,9 @@ export const getConversations = async (req: Request, res: Response) => {
           ({ userId: memberId }) => memberId === userId,
         );
 
-        // If the user has read everything, unread is 0.
-        // Otherwise, use the grouped count (approximation — exact per-conversation
-        // lastReadAt filtering is handled by the frontend marking conversations read).
         let unreadCount = unreadMap.get(conversation.id) ?? 0;
 
-        // If the user has a lastReadAt, we need to filter more precisely.
-        // We can't do per-conversation lastReadAt in a single groupBy, so we
-        // only apply the precise filter when there's no lastReadAt (all unread).
         if (membership?.lastReadAt) {
-          // For precise filtering, we still need a targeted count, but only
-          // for conversations that have any unread messages at all.
-          // This is a rare case (only when there are unread messages), so
-          // the N+1 is bounded and acceptable.
           if (unreadCount > 0) {
             const preciseCount = await prisma.message.count({
               where: {
@@ -100,34 +110,56 @@ export const getConversations = async (req: Request, res: Response) => {
       }),
     );
 
-    return res.status(200).json(result);
+    res.status(200).json(result);
+    return;
   } catch (error) {
     console.error("Get conversations error:", error);
-    return res.status(500).json({ error: "Failed to fetch conversations." });
+    res.status(500).json({ error: "Failed to fetch conversations." });
+    return;
   }
 };
 
-export const createConversation = async (req: Request, res: Response) => {
+export const createConversation = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   const userId = getUserId(req);
   const { participantId } = req.body;
-  if (!userId) return res.status(401).json({ error: "Authentication required." });
+
+  if (!userId) {
+    res.status(401).json({ error: "Authentication required." });
+    return;
+  }
   if (!participantId || participantId === userId) {
-    return res.status(400).json({ error: "A different participant is required." });
+    res.status(400).json({ error: "A different participant is required." });
+    return;
   }
 
   try {
-    const participant = await prisma.user.findUnique({ where: { id: participantId }, select: { id: true } });
-    if (!participant) return res.status(404).json({ error: "Participant not found." });
+    const participant = await prisma.user.findUnique({
+      where: { id: participantId },
+      select: { id: true },
+    });
+    if (!participant) {
+      res.status(404).json({ error: "Participant not found." });
+      return;
+    }
 
     const candidates = await prisma.conversation.findMany({
       where: {
         participants: { some: { userId } },
         AND: { participants: { some: { userId: participantId } } },
       },
-      include: { participants: true },
+      include: { participants: { include: participantSelect } },
     });
-    const existing = candidates.find(({ participants }) => participants.length === 2);
-    if (existing) return res.status(200).json(existing);
+
+    const existing = candidates.find(
+      ({ participants }) => participants.length === 2,
+    );
+    if (existing) {
+      res.status(200).json(existing);
+      return;
+    }
 
     const conversation = await prisma.conversation.create({
       data: {
@@ -138,124 +170,340 @@ export const createConversation = async (req: Request, res: Response) => {
       include: { participants: { include: participantSelect } },
     });
 
-    return res.status(201).json(conversation);
+    // --- Socket.IO Emission ---
+    // Notify the recipient's personal room so their chat list/inbox updates live
+    const io = req.app.get("io");
+    if (io) {
+      io.to(`user:${participantId}`).emit("new_conversation", conversation);
+    }
+
+    res.status(201).json(conversation);
+    return;
   } catch (error) {
     console.error("Create conversation error:", error);
-    return res.status(500).json({ error: "Failed to create conversation." });
+    res.status(500).json({ error: "Failed to create conversation." });
+    return;
   }
 };
 
-export const getMessages = async (req: Request<{ conversationId: string }>, res: Response) => {
+export const getMessages = async (
+  req: Request<
+    { conversationId: string },
+    any,
+    any,
+    { page?: string; limit?: string }
+  >,
+  res: Response,
+): Promise<void> => {
   const userId = getUserId(req);
-  if (!userId) return res.status(401).json({ error: "Authentication required." });
+  if (!userId) {
+    res.status(401).json({ error: "Authentication required." });
+    return;
+  }
 
   try {
-    const authorization = await getAuthorizedConversation(req.params.conversationId, userId);
+    const authorization = await getAuthorizedConversation(
+      req.params.conversationId,
+      userId,
+    );
     if (authorization.status === 404) {
-      return res.status(404).json({ error: "Conversation not found." });
+      res.status(404).json({ error: "Conversation not found." });
+      return;
     }
     if (authorization.status === 403) {
-      return res.status(403).json({ error: "You are not a participant in this conversation." });
+      res
+        .status(403)
+        .json({ error: "You are not a participant in this conversation." });
+      return;
     }
 
     const page = Math.max(Number(req.query.page) || 1, 1);
     const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100);
+
     const messages = await prisma.message.findMany({
       where: { conversationId: req.params.conversationId, deletedAt: null },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * limit,
       take: limit,
-      include: { sender: { select: { id: true, firstName: true, lastName: true, email: true } } },
+      include: {
+        sender: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+      },
     });
 
-    return res.status(200).json(messages.reverse());
+    res.status(200).json(messages.reverse());
+    return;
   } catch (error) {
     console.error("Get messages error:", error);
-    return res.status(500).json({ error: "Failed to fetch messages." });
+    res.status(500).json({ error: "Failed to fetch messages." });
+    return;
   }
 };
 
-export const sendMessage = async (req: Request<{ conversationId: string }>, res: Response) => {
+//with socket.io
+export const sendMessage = async (
+  req: Request<{ conversationId: string }, any, { text?: string }>,
+  res: Response,
+): Promise<void> => {
   const userId = getUserId(req);
   const text = typeof req.body.text === "string" ? req.body.text.trim() : "";
-  if (!userId) return res.status(401).json({ error: "Authentication required." });
-  if (!text) return res.status(400).json({ error: "Message text is required." });
-  if (text.length > 5000) return res.status(400).json({ error: "Message is too long." });
+
+  if (!userId) {
+    res.status(401).json({ error: "Authentication required." });
+    return;
+  }
+  if (!text) {
+    res.status(400).json({ error: "Message text is required." });
+    return;
+  }
+  if (text.length > 5000) {
+    res.status(400).json({ error: "Message is too long." });
+    return;
+  }
 
   try {
-    const authorization = await getAuthorizedConversation(req.params.conversationId, userId);
+    const authorization = await getAuthorizedConversation(
+      req.params.conversationId,
+      userId,
+    );
+
     if (authorization.status === 404) {
-      return res.status(404).json({ error: "Conversation not found." });
+      res.status(404).json({ error: "Conversation not found." });
+      return;
     }
     if (authorization.status === 403) {
-      return res.status(403).json({ error: "You are not a participant in this conversation." });
+      res
+        .status(403)
+        .json({ error: "You are not a participant in this conversation." });
+      return;
     }
 
     const message = await prisma.$transaction(async (transaction) => {
       const created = await transaction.message.create({
-        data: { conversationId: req.params.conversationId, senderId: userId, text },
-        include: { sender: { select: { id: true, firstName: true, lastName: true, email: true } } },
+        data: {
+          conversationId: req.params.conversationId,
+          senderId: userId,
+          text,
+        },
+        include: {
+          sender: {
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
+        },
       });
-      await transaction.conversation.update({ where: { id: req.params.conversationId }, data: { updatedAt: new Date() } });
+
+      await transaction.conversation.update({
+        where: { id: req.params.conversationId },
+        data: { updatedAt: new Date() },
+      });
+
       return created;
     });
 
-    return res.status(201).json(message);
+    // --- Socket.IO Emission ---
+    const io = req.app.get("io");
+    console.log(
+      "IO instance found:",
+      !!io,
+      "Emitting to conversation:",
+      req.params.conversationId,
+    );
+    if (io) {
+      io.to(`conversation:${req.params.conversationId}`).emit(
+        "receive_message",
+        message,
+      );
+
+          // 2. Fetch participants and emit to their personal user rooms for inbox/badge updates
+const participants = await prisma.conversationParticipant.findMany({
+  where: { conversationId: req.params.conversationId },
+  select: { userId: true },
+});
+
+participants.forEach((p) => {
+  io.to(`user:${p.userId}`).emit("receive_message", message);
+});
+    }
+
+    res.status(201).json(message);
+    return;
   } catch (error) {
     console.error("Send message error:", error);
-    return res.status(500).json({ error: "Failed to send message." });
+    res.status(500).json({ error: "Failed to send message." });
+    return;
   }
 };
 
-export const markConversationRead = async (req: Request<{ conversationId: string }>, res: Response) => {
+// export const sendMessage = async (
+//   req: Request<{ conversationId: string }>,
+//   res: Response,
+// ) => {
+//   const userId = getUserId(req);
+//   const text = typeof req.body.text === "string" ? req.body.text.trim() : "";
+//   if (!userId)
+//     return res.status(401).json({ error: "Authentication required." });
+//   if (!text)
+//     return res.status(400).json({ error: "Message text is required." });
+//   if (text.length > 5000)
+//     return res.status(400).json({ error: "Message is too long." });
+
+//   try {
+//     const authorization = await getAuthorizedConversation(
+//       req.params.conversationId,
+//       userId,
+//     );
+//     if (authorization.status === 404) {
+//       return res.status(404).json({ error: "Conversation not found." });
+//     }
+//     if (authorization.status === 403) {
+//       return res
+//         .status(403)
+//         .json({ error: "You are not a participant in this conversation." });
+//     }
+
+//     const message = await prisma.$transaction(async (transaction) => {
+//       const created = await transaction.message.create({
+//         data: {
+//           conversationId: req.params.conversationId,
+//           senderId: userId,
+//           text,
+//         },
+//         include: {
+//           sender: {
+//             select: { id: true, firstName: true, lastName: true, email: true },
+//           },
+//         },
+//       });
+//       await transaction.conversation.update({
+//         where: { id: req.params.conversationId },
+//         data: { updatedAt: new Date() },
+//       });
+//       return created;
+//     });
+
+//     return res.status(201).json(message);
+//   } catch (error) {
+//     console.error("Send message error:", error);
+//     return res.status(500).json({ error: "Failed to send message." });
+//   }
+// };
+
+export const markConversationRead = async (
+  req: Request<{ conversationId: string }>,
+  res: Response,
+): Promise<void> => {
   const userId = getUserId(req);
-  if (!userId) return res.status(401).json({ error: "Authentication required." });
+  if (!userId) {
+    res.status(401).json({ error: "Authentication required." });
+    return;
+  }
 
   try {
-    const authorization = await getAuthorizedConversation(req.params.conversationId, userId);
+    const authorization = await getAuthorizedConversation(
+      req.params.conversationId,
+      userId,
+    );
     if (authorization.status === 404) {
-      return res.status(404).json({ error: "Conversation not found." });
+      res.status(404).json({ error: "Conversation not found." });
+      return;
     }
     if (authorization.status === 403) {
-      return res.status(403).json({ error: "You are not a participant in this conversation." });
+      res
+        .status(403)
+        .json({ error: "You are not a participant in this conversation." });
+      return;
     }
 
-    await prisma.conversationParticipant.update({
-      where: { conversationId_userId: { conversationId: req.params.conversationId, userId } },
+    const updatedParticipant = await prisma.conversationParticipant.update({
+      where: {
+        conversationId_userId: {
+          conversationId: req.params.conversationId,
+          userId,
+        },
+      },
       data: { lastReadAt: new Date() },
     });
-    return res.status(204).send();
+
+    // --- Socket.IO Emission ---
+    // Notify the room that messages have been read by this user
+    const io = req.app.get("io");
+    if (io) {
+      io.to(req.params.conversationId).emit("conversation_read", {
+        conversationId: req.params.conversationId,
+        userId,
+        lastReadAt: updatedParticipant.lastReadAt,
+      });
+    }
+
+    res.status(204).send();
+    return;
   } catch (error) {
-    return res.status(404).json({ error: "Conversation participant not found." });
+    console.error("Mark conversation read error:", error);
+    res.status(404).json({ error: "Conversation participant not found." });
+    return;
   }
 };
 
-export const deleteMessage = async (req: Request<{ messageId: string }>, res: Response) => {
+export const deleteMessage = async (
+  req: Request<{ messageId: string }>,
+  res: Response,
+): Promise<void> => {
   const userId = getUserId(req);
-  if (!userId) return res.status(401).json({ error: "Authentication required." });
+  if (!userId) {
+    res.status(401).json({ error: "Authentication required." });
+    return;
+  }
 
   try {
     const messageReference = await prisma.message.findUnique({
       where: { id: req.params.messageId },
       select: { id: true, senderId: true, conversationId: true },
     });
-    if (!messageReference) return res.status(404).json({ error: "Message not found." });
+    if (!messageReference) {
+      res.status(404).json({ error: "Message not found." });
+      return;
+    }
 
-    const authorization = await getAuthorizedConversation(messageReference.conversationId, userId);
+    const authorization = await getAuthorizedConversation(
+      messageReference.conversationId,
+      userId,
+    );
     if (authorization.status === 404) {
-      return res.status(404).json({ error: "Conversation not found." });
+      res.status(404).json({ error: "Conversation not found." });
+      return;
     }
     if (authorization.status === 403) {
-      return res.status(403).json({ error: "You are not a participant in this conversation." });
+      res
+        .status(403)
+        .json({ error: "You are not a participant in this conversation." });
+      return;
     }
 
-    const message = messageReference;
-    if (!message) return res.status(404).json({ error: "Message not found." });
-    if (message.senderId !== userId) return res.status(403).json({ error: "You can only delete your own messages." });
+    if (messageReference.senderId !== userId) {
+      res.status(403).json({ error: "You can only delete your own messages." });
+      return;
+    }
 
-    await prisma.message.update({ where: { id: message.id }, data: { deletedAt: new Date(), text: "Message deleted" } });
-    return res.status(204).send();
+    await prisma.message.update({
+      where: { id: messageReference.id },
+      data: { deletedAt: new Date(), text: "Message deleted" },
+    });
+
+    // --- Socket.IO Emission ---
+    const io = req.app.get("io");
+    if (io) {
+      io.to(messageReference.conversationId).emit("message_deleted", {
+        messageId: messageReference.id,
+        conversationId: messageReference.conversationId,
+      });
+    }
+
+    res.status(204).send();
+    return;
   } catch (error) {
-    return res.status(500).json({ error: "Failed to delete message." });
+    console.error("Delete message error:", error);
+    res.status(500).json({ error: "Failed to delete message." });
+    return;
   }
 };
