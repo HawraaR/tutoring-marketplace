@@ -5,6 +5,9 @@
 export type TutorStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELED' | 'COMPLETED'
 export type SessionType= 'ONLINE' | 'IN_PERSON'
+export type ReviewCriterionKey = "knowledge" | "teachingStyle" | "punctuality";
+export type CategoryRatings = Record<ReviewCriterionKey, number>;
+
 export interface Subject {
   id: string;
   name: string;
@@ -74,13 +77,13 @@ export interface TutorListItem {
   availability: AvailabilitySlot[];
 }
 /** Phase-2 `Review` model shape (frontend degrades gracefully if absent/empty). */
-export interface TutorReview {
+export interface TutorReview extends BookingReview{
   id: string;
   rating: number; // 1..5, halves allowed
   comment: string;
   createdAt: string;
   sessionDate: string; //booking.startTime(new)
-  subject: Subject;
+  subject: {id: string; name:string};
   student: { id: string; firstName: string | null; lastName: string | null };
 }
 /** Contract for GET /api/tutors/:id */
@@ -129,14 +132,17 @@ export interface Booking {
 export interface BookingReview {
   id: string;
   bookingId: string;
+  tutorId: string;
+  studentId: string;
   rating: number;
   comment: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateReviewInput {
   bookingId: string;
-  rating: number; // 1..5
+  ratings: CategoryRatings; // 1..5 for each review category
   comment: string;
 }
 

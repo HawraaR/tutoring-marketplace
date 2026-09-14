@@ -32,6 +32,11 @@ export interface Booking {
     name: string;
     code?: string;
   };
+  review?: {
+    id: string;
+    rating: number;
+    comment: string;
+  } | null;
 }
 
 // UI ViewModel for the Sessions page
@@ -49,6 +54,7 @@ export interface Session {
   mode: string;
   note?: string;
   status: SessionStatus;
+  bookingStatus: BookingStatus;
   sortDate: string;
   tone?: "slate" | "olive" | "amber";
   meetingUrl?: string;
@@ -68,10 +74,20 @@ export interface UnifiedSession {
   mode: string;
   note?: string;
   status: SessionStatus;
+  bookingStatus: BookingStatus;
   sortDate: string;
   tone?: "slate" | "olive" | "amber";
   meetingUrl?: string;
-  review?: { id: string; rating: number; comment: string } | null;
+  review: { id: string; rating: number; comment: string } | null;
+  startTime: string;
+  endTime: string;
+  subject: { id: string; name: string };
+  tutor: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+  };
   // Ensure you also have the raw booking ID available to send to the backend
   bookingId?: string; 
 }
@@ -89,4 +105,33 @@ export interface CreateBookingPayload {
 // Payload for updating booking status (PATCH /bookings/:bookingId/status)
 export interface UpdateBookingStatusPayload {
   status: BookingStatus;
+}
+
+// ── Booking modal: enriched open slot from GET /availability/open ──────────
+export interface OpenSlotSubject {
+  id: string;
+  name: string;
+}
+
+export interface OpenSlotTutorProfile {
+  hourlyRate: number;
+  averageRating: number;
+  reviewCount: number;
+  headline: string | null;
+}
+
+export interface OpenSlot {
+  id: string;
+  tutorId: string;
+  startTime: string; // ISO
+  endTime: string;   // ISO
+  isBooked: boolean;
+  tutor: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+    tutorProfile: OpenSlotTutorProfile | null;
+    tutorSubjects: { subject: OpenSlotSubject }[];
+  };
 }

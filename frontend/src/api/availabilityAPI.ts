@@ -4,6 +4,7 @@ import type {
   CreateAvailabilityPayload,
   UpdateAvailabilityPayload,
   ApiResponse,
+  OpenSlot,
 } from "../types";
 
 /**
@@ -29,6 +30,22 @@ export const getTutorSchedule = async (
     `/availability/tutors/${tutorId}`
   );
   return response.data.data;
+};
+
+/**
+ * Fetch a tutor's availability slots for a date range (public endpoint).
+ * GET /availability/tutor/:tutorId?from=<ISO>&to=<ISO>
+ */
+export const getTutorAvailability = async (
+  tutorId: string,
+  from: string,
+  to: string
+): Promise<AvailabilitySlot[]> => {
+  const response = await api.get<AvailabilitySlot[]>(
+    `/availability/tutor/${tutorId}`,
+    { params: { from, to } }
+  );
+  return response.data;
 };
 
 /**
@@ -68,4 +85,19 @@ export const deleteAvailabilitySlot = async (
   slotId: string
 ): Promise<void> => {
   await api.delete<ApiResponse<null>>(`/availability/${slotId}`);
+};
+/**
+ * Fetch bookable (open) slots for a date range, enriched with tutor
+ * rate + subjects. Powers the booking modal week grid.
+ * GET /availability/open?from=<ISO>&to=<ISO>
+ */
+export const getOpenSlots = async (from: string, to: string): Promise<OpenSlot[]> => {
+  const response = await api.get<ApiResponse<OpenSlot[]>>(`/availability/open`, {
+    params: { from, to },
+  });
+  const body = response.data;
+  if (!body || !Array.isArray(body.data)) {
+    throw new Error("The availability response has an invalid format.");
+  }
+  return body.data;
 };
