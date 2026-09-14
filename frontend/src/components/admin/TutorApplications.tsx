@@ -30,7 +30,7 @@ export function TutorApplications() {
   const handleApprove = async (id: string) => {
     setBusyId(id);
     try {
-      await reviewTutorApplication(id, "approve");
+      await reviewTutorApplication(id, "APPROVED");
       setApplications((prev) => prev.filter((app) => app.id !== id));
     } catch {
       setError("Failed to approve this application.");
@@ -45,7 +45,7 @@ export function TutorApplications() {
 
     setBusyId(id);
     try {
-      await reviewTutorApplication(id, "reject", rejectionReason);
+      await reviewTutorApplication(id, "REJECTED", rejectionReason);
       setApplications((prev) => prev.filter((app) => app.id !== id));
     } catch {
       setError("Failed to reject this application.");

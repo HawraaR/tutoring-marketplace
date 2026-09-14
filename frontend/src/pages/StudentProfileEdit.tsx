@@ -24,7 +24,7 @@ export function StudentProfileEdit() {
 
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [, setSaved] = useState(false);
 
   useEffect(() => {
     Promise.all([getMyStudentProfile(), getSubjects().catch(() => [])])
