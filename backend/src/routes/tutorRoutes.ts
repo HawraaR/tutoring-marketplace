@@ -43,6 +43,7 @@ router.patch(
 
 // Admin: review pending applications
 router.get("/applications", authenticateToken, requireAdmin, listTutorApplications);
+
 router.patch(
   "/applications/:id",
   authenticateToken,

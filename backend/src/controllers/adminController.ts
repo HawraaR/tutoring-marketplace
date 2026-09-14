@@ -29,24 +29,73 @@ export const getPendingTutors = async (_req: Request, res: Response) => {
   }
 };
 
-// Approve or Reject Tutor Application
+// // Approve or Reject Tutor Application
+// export const reviewTutorApplication = async (
+//   req: Request<{ id: string }>,
+//   res: Response
+// ) => {
+//   try {
+//     const { id } = req.params; // Profile ID or User ID
+//     const { verificationStatus, rejectionReason } = req.body;
+
+//     if (!["APPROVED", "REJECTED", "PENDING"].includes(verificationStatus)) {
+//       return res.status(400).json({ error: "Invalid verification status." });
+//     }
+
+//     const updatedProfile = await prisma.tutorProfile.update({
+//       where: { id },
+//       data: {
+//         verificationStatus,
+//         rejectionReason: verificationStatus === "REJECTED" ? rejectionReason : null,
+//       },
+//       include: {
+//         user: {
+//           select: {
+//             id: true,
+//             firstName: true,
+//             lastName: true,
+//             email: true,
+//           },
+//         },
+//       },
+//     });
+
+//     return res.json(updatedProfile);
+//   } catch (error) {
+//     console.error("Error reviewing tutor application:", error);
+//     return res.status(500).json({ error: "Failed to update tutor verification status." });
+//   }
+// };
+
 export const reviewTutorApplication = async (
   req: Request<{ id: string }>,
   res: Response
 ) => {
   try {
-    const { id } = req.params; // Profile ID or User ID
+    const { id } = req.params; // TutorProfile ID
     const { verificationStatus, rejectionReason } = req.body;
 
     if (!["APPROVED", "REJECTED", "PENDING"].includes(verificationStatus)) {
       return res.status(400).json({ error: "Invalid verification status." });
     }
 
+    if (verificationStatus === "REJECTED" && !rejectionReason?.trim()) {
+      return res.status(400).json({ error: "A rejection reason is required." });
+    }
+
+    const isApproved = verificationStatus === "APPROVED";
+
     const updatedProfile = await prisma.tutorProfile.update({
       where: { id },
       data: {
         verificationStatus,
-        rejectionReason: verificationStatus === "REJECTED" ? rejectionReason : null,
+        rejectionReason: verificationStatus === "REJECTED" ? rejectionReason.trim() : null,
+        // Update isTutor on the related User record
+        user: {
+          update: {
+            isTutor: isApproved,
+          },
+        },
       },
       include: {
         user: {
@@ -55,6 +104,7 @@ export const reviewTutorApplication = async (
             firstName: true,
             lastName: true,
             email: true,
+            isTutor: true,
           },
         },
       },

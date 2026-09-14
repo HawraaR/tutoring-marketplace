@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import multer from "multer";
 import { prisma } from "../db";
 import { supabase } from "../supabase"; // Adjust path to your supabase config
+import { TutorStatus } from "@prisma/client";
 
 // 1. Configure Multer with 10MB limit and memory storage
 const upload = multer({
@@ -16,7 +17,10 @@ const getUserId = (req: Request): string | undefined =>
   (req as any).user?.userId || (req as any).user?.id;
 
 // Helper to upload files to Supabase Storage and get public URLs
-async function uploadFilesToSupabase(files: Express.Multer.File[], userId: string): Promise<string[]> {
+async function uploadFilesToSupabase(
+  files: Express.Multer.File[],
+  userId: string,
+): Promise<string[]> {
   const uploadedUrls: string[] = [];
 
   for (const file of files) {
@@ -45,8 +49,8 @@ async function uploadFilesToSupabase(files: Express.Multer.File[], userId: strin
 
 // export const applyAsTutor = async (req: Request, res: Response) => {
 //   try {
-//     const userId = getUserId(req); 
-//     const files = req.files as Express.Multer.File[]; 
+//     const userId = getUserId(req);
+//     const files = req.files as Express.Multer.File[];
 
 //     // Use the helper function here! This resolves the unused declaration warning.
 //     const certificateUrls = await uploadFilesToSupabase(files, userId);
@@ -77,7 +81,6 @@ async function uploadFilesToSupabase(files: Express.Multer.File[], userId: strin
 //   }
 // };
 
-
 // POST /api/tutors/apply
 export const applyAsTutor = async (req: Request, res: Response) => {
   try {
@@ -99,7 +102,9 @@ export const applyAsTutor = async (req: Request, res: Response) => {
     });
 
     if (existingUser?.tutorProfile) {
-      return res.status(400).json({ error: "Tutor profile already exists for this user" });
+      return res
+        .status(400)
+        .json({ error: "Tutor profile already exists for this user" });
     }
 
     // Process file uploads if any certificates were submitted
@@ -110,15 +115,22 @@ export const applyAsTutor = async (req: Request, res: Response) => {
     }
 
     // Safely parse JSON strings (FormData transmits arrays as JSON strings)
-    const parsedLanguages = typeof languages === "string" ? JSON.parse(languages) : (languages || ["English"]);
-    const parsedExperience = typeof experience === "string" ? JSON.parse(experience) : (experience || []);
-    const parsedSubjectIds = typeof subjectIds === "string" ? JSON.parse(subjectIds) : subjectIds;
+    const parsedLanguages =
+      typeof languages === "string"
+        ? JSON.parse(languages)
+        : languages || ["English"];
+    const parsedExperience =
+      typeof experience === "string"
+        ? JSON.parse(experience)
+        : experience || [];
+    const parsedSubjectIds =
+      typeof subjectIds === "string" ? JSON.parse(subjectIds) : subjectIds;
 
     // Create profile in Prisma with the uploaded certificate URLs
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        isTutor: true,
+        // isTutor: true,
         tutorProfile: {
           create: {
             headline,
@@ -145,7 +157,10 @@ export const applyAsTutor = async (req: Request, res: Response) => {
     // Link taught subjects
     if (Array.isArray(parsedSubjectIds) && parsedSubjectIds.length > 0) {
       await prisma.tutorSubject.createMany({
-        data: parsedSubjectIds.map((subjectId: string) => ({ tutorId: userId!, subjectId })),
+        data: parsedSubjectIds.map((subjectId: string) => ({
+          tutorId: userId!,
+          subjectId,
+        })),
         skipDuplicates: true,
       });
     }
@@ -159,7 +174,6 @@ export const applyAsTutor = async (req: Request, res: Response) => {
     return res.status(500).json({ error: "Failed to create tutor profile" });
   }
 };
-
 
 // GET /api/tutors/me — the logged-in user's own tutor profile + selected subjects
 export const getMyTutorProfile = async (req: Request, res: Response) => {
@@ -193,12 +207,18 @@ export const updateMyTutorProfile = async (req: Request, res: Response) => {
   try {
     const userId = getUserId(req);
 
-    const existing = await prisma.tutorProfile.findUnique({ where: { userId } });
+    const existing = await prisma.tutorProfile.findUnique({
+      where: { userId },
+    });
     if (!existing) {
-      return res.status(404).json({ error: "No tutor profile found. Apply as a tutor first." });
+      return res
+        .status(404)
+        .json({ error: "No tutor profile found. Apply as a tutor first." });
     }
     if (existing.verificationStatus !== "APPROVED") {
-      return res.status(403).json({ error: "Your profile is not approved yet, so it cannot be edited." });
+      return res.status(403).json({
+        error: "Your profile is not approved yet, so it cannot be edited.",
+      });
     }
 
     const {
@@ -223,8 +243,8 @@ export const updateMyTutorProfile = async (req: Request, res: Response) => {
     // 2. Normalize existing certificates
     let keptCertificates: string[] = [];
     if (existingCertificates) {
-      keptCertificates = Array.isArray(existingCertificates) 
-        ? existingCertificates 
+      keptCertificates = Array.isArray(existingCertificates)
+        ? existingCertificates
         : [existingCertificates];
     }
 
@@ -246,7 +266,10 @@ export const updateMyTutorProfile = async (req: Request, res: Response) => {
         ? [
             prisma.tutorSubject.deleteMany({ where: { tutorId: userId } }),
             prisma.tutorSubject.createMany({
-              data: subjectIds.map((subjectId: string) => ({ tutorId: userId!, subjectId })),
+              data: subjectIds.map((subjectId: string) => ({
+                tutorId: userId!,
+                subjectId,
+              })),
               skipDuplicates: true,
             }),
           ]
@@ -259,7 +282,6 @@ export const updateMyTutorProfile = async (req: Request, res: Response) => {
     return res.status(500).json({ error: "Failed to update tutor profile" });
   }
 };
-
 
 // export const updateMyTutorProfile = async (req: Request, res: Response) => {
 //   try {
@@ -315,17 +337,18 @@ export const updateMyTutorProfile = async (req: Request, res: Response) => {
 
 // GET /api/tutors/applications?status=PENDING|APPROVED|REJECTED — admin only
 
-
-
-
 export const listTutorApplications = async (req: Request, res: Response) => {
   try {
     const status = (req.query.status as string)?.toUpperCase() || "PENDING";
 
     const applications = await prisma.tutorProfile.findMany({
-      where: { verificationStatus: status as "PENDING" | "APPROVED" | "REJECTED" },
+      where: {
+        verificationStatus: status as "PENDING" | "APPROVED" | "REJECTED",
+      },
       include: {
-        user: { select: { id: true, email: true, firstName: true, lastName: true } },
+        user: {
+          select: { id: true, email: true, firstName: true, lastName: true },
+        },
       },
       orderBy: { createdAt: "asc" },
     });
@@ -333,35 +356,87 @@ export const listTutorApplications = async (req: Request, res: Response) => {
     return res.status(200).json({ applications });
   } catch (error) {
     console.error("List Tutor Applications Error:", error);
-    return res.status(500).json({ error: "Failed to fetch tutor applications" });
+    return res
+      .status(500)
+      .json({ error: "Failed to fetch tutor applications" });
+  }
+};
+
+// Adjust import to match your setup
+export const reviewTutorApplication = async (
+  req: Request<{ id: string }>,
+  res: Response,
+) => {
+  try {
+    const { id } = req.params;
+
+    // Accept status OR action, in uppercase OR lowercase
+    const input = req.body.status || req.body.action || "";
+    const normalized = String(input).trim().toUpperCase();
+
+    const isApproved = normalized === "APPROVED" || normalized === "APPROVE";
+
+    // 1. Fetch profile to grab linked userId
+    const profile = await prisma.tutorProfile.findUnique({
+      where: { id },
+      select: { id: true, userId: true },
+    });
+
+    if (!profile) {
+      return res.status(404).json({ error: "Tutor profile not found" });
+    }
+
+    // 2. Sync both User and TutorProfile tables inside a transaction
+    const [updatedUser, updatedProfile] = await prisma.$transaction([
+      prisma.user.update({
+        where: { id: profile.userId },
+        data: { isTutor: isApproved },
+      }),
+      prisma.tutorProfile.update({
+        where: { id: profile.id },
+        data: {
+          verificationStatus: isApproved ? "APPROVED" : "REJECTED",
+          rejectionReason: isApproved ? null : req.body.rejectionReason,
+        },
+      }),
+    ]);
+
+    return res.status(200).json({
+      message: `Application ${isApproved ? "approved" : "rejected"} successfully`,
+      user: updatedUser,
+      profile: updatedProfile,
+    });
+  } catch (error) {
+    console.error("Review Application Error:", error);
+    return res.status(500).json({ error: "Failed to review application" });
   }
 };
 
 // PATCH /api/tutors/applications/:id — admin only
-export const reviewTutorApplication = async (req: Request, res: Response) => {
-  try {
-    const id = req.params.id as string;
-    const { action, rejectionReason } = req.body;
+// export const reviewTutorApplication = async (req: Request, res: Response) => {
+//   try {
+//     const id = req.params.id as string;
+//     const { action, rejectionReason } = req.body;
 
-    const existing = await prisma.tutorProfile.findUnique({ where: { id } });
-    if (!existing) {
-      return res.status(404).json({ error: "Tutor application not found" });
-    }
+//     const existing = await prisma.tutorProfile.findUnique({ where: { id } });
+//     if (!existing) {
+//       return res.status(404).json({ error: "Tutor application not found" });
+//     }
 
-    const profile = await prisma.tutorProfile.update({
-      where: { id },
-      data: {
-        verificationStatus: action === "approve" ? "APPROVED" : "REJECTED",
-        rejectionReason: action === "approve" ? null : rejectionReason,
-      },
-    });
+//     const profile = await prisma.tutorProfile.update({
+//       where: { id },
+//       data: {
+//         verificationStatus: action === "approve" ? "APPROVED" : "REJECTED",
+//         rejectionReason: action === "approve" ? null : rejectionReason,
+//       },
+//     });
 
-    return res.status(200).json({ message: `Application ${action}d`, profile });
-  } catch (error) {
-    console.error("Review Tutor Application Error:", error);
-    return res.status(500).json({ error: "Failed to review tutor application" });
-  }
-};
+//     return res.status(200).json({ message: `Application ${action}d`, profile });
+//   } catch (error) {
+//     console.error("Review Tutor Application Error:", error);
+//     return res.status(500).json({ error: "Failed to review tutor application" });
+//   }
+// };
 
 // GET /api/tutors  — public, no auth middleware
 export const getTutors = async (_req: Request, res: Response) => {
