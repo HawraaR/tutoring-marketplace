@@ -113,7 +113,7 @@ export const AuthForm: React.FC = () => {
               <span className="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-slate-500" />
               <span className="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-slate-600" />
             </div>
-            <span className="rounded-full bg-brand-primary/20 px-2.5 py-0.5 text-xs font-semibold text-brand-primary border border-brand-primary/30">
+            <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold text-primary border border-brand-primary/30">
               Verified Tutors
             </span>
           </div>

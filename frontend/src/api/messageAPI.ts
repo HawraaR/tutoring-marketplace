@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { api } from "./axios";
 import type { ChatMessage, Conversation, CreateConversationResponse } from "../types";
+import { Link, useParams, useNavigate } from "react-router-dom";
 
 export interface MessageContact {
   id: string;

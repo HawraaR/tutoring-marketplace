@@ -14,7 +14,7 @@ import { FilterPanel } from "../components/directory/filterPanel";
 import { TutorCard } from "../components/directory/tutorCard";
 import { IconChevronLeft, IconChevronRight, IconGrid, IconList } from "../components/directory/icons";
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 10;
 
 function pageList(page: number, count: number): (number | "…")[] {
   if (count <= 7) return Array.from({ length: count }, (_, i) => i + 1);

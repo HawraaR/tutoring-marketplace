@@ -14,7 +14,6 @@ import { SessionPage } from "./pages/SessionPage";
 import { AppLayout, AuthLayout } from "./layouts";
 // import { Messages } from "./pages/Messages";
 import { MessagesIO } from "./pages/MessagesIO";
-// import { Calendar } from "./pages/Calendar";
 import { CalendarV2 } from "./pages/CalendarV2";
 import LandingPage from "./pages/LandingPage2";
 import Directory from "./pages/TutorDirectory";
