@@ -15,6 +15,7 @@ export const getAllAvailability = async (req: Request, res: Response) => {
             firstName: true,
             lastName: true,
             email: true,
+            tutorProfile: true
           },
         },
       },
@@ -24,6 +25,7 @@ export const getAllAvailability = async (req: Request, res: Response) => {
     });
 
     // Wrap in data property to match frontend expectations
+    console.log("The available slots are: ", slots);
     return res.status(200).json({ success: true, data: slots });
   } catch (error) {
     console.error("Error fetching all availability:", error);
