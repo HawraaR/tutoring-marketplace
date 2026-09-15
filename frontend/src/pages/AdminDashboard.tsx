@@ -1,42 +1,5 @@
 
-/*
-=========================================================
-ADMIN DASHBOARD - OVERVIEW
 
-This is frontend-only for now.
-
-The data below is MOCK DATA.
-Later, replace the mock arrays/values with API data
-from your Express + Prisma backend.
-
-Currently supported by the Prisma schema:
-- Users
-- Tutors
-- Students
-- Tutor verification
-- Subjects
-- Bookings
-- Availability
-- Session status
-- Tutor ratings
-- Tutor hourly rates
-
-Not currently represented in the Prisma schema:
-- Payments
-- Payouts
-- Escrow
-- Reviews
-- Chat logs
-- Reports
-- Disputes
-- Promo codes
-- Notifications
-- Analytics history
-
-Those sections are therefore represented as UI/mock data
-until the corresponding backend models are created.
-=========================================================
-*/
 
 import { TutorApplications } from "../components/admin/TutorApplications";
 

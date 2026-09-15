@@ -430,6 +430,7 @@ import { Card, Input, Button } from "../components/ui";
 import { getMyTutorProfile, updateMyTutorProfile } from "../api/tutorProfileAPI";
 import { getSubjects } from "../api/subjectAPI";
 import type { Subject, TutorProfile } from "../types";
+import { toast } from "react-hot-toast";
 
 const toList = (value: string): string[] =>
   value
@@ -599,6 +600,7 @@ export function TutorProfileEdit() {
       });
 
       const { profile: updated } = await updateMyTutorProfile(data);
+      toast.success("Profile updated successfully!");
       setProfile(updated);
       setExistingCertificates(updated.certificates ?? []);
       setCertificateFiles([]);
@@ -610,6 +612,7 @@ export function TutorProfileEdit() {
       } else {
         setErrorMessages([error?.response?.data?.error || "Failed to update profile."]);
       }
+      toast.error("Failed to update profile.");
     } finally {
       setIsSaving(false);
     }

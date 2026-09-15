@@ -19,6 +19,7 @@ import { useAuth } from "../context/AuthContext";
 import { applyAsTutor } from "../api/tutorProfileAPI";
 import { getSubjects } from "../api/subjectAPI";
 import type { Subject } from "../types";
+import { toast } from "react-hot-toast";
 
 const toList = (value: string): string[] =>
   value
@@ -224,7 +225,7 @@ export function TutorApplication() {
         Object.fromEntries(data.entries()),
       );
       await applyAsTutor(data);
-      
+      toast.success("Tutor application submitted successfully!");
       await refreshUser();
       setSubmitted(true);
     } catch (error: any) {
@@ -236,6 +237,7 @@ export function TutorApplication() {
           error?.response?.data?.error || "Failed to submit application.",
         ]);
       }
+      toast.error("Failed to submit tutor application. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -452,13 +454,37 @@ export function TutorApplication() {
                 onChange={(e) => setHourlyRate(e.target.value)}
                 required
               />
-              <Input
+              {/* <Input
                 label="Meeting URL"
-                placeholder="https://meet.google.com/iip-rsqn-zki"
+                placeholder="https://meet.google.com/i.."
                 type="url"
                 value={meetingUrl}
                 onChange={(e) => setMeetingUrl(e.target.value)}
-              />
+              /> */}
+              <div className="flex flex-col gap-1.5">
+                <Input
+                  label="Meeting URL"
+                  placeholder="https://meet.google.com/i.."
+                  type="url"
+                  value={meetingUrl}
+                  onChange={(e) => setMeetingUrl(e.target.value)}
+                />
+                <p className="text-[11px] text-muted leading-snug">
+                  <span className="font-medium text-ink">Need a link?</span> Go
+                  to{" "}
+                  <a
+                    href="https://meet.google.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-brand-primary underline hover:opacity-80"
+                  >
+                    Google Meet
+                  </a>
+                  , click <strong>"New meeting"</strong> &rarr;{" "}
+                  <strong>"Create a meeting for later"</strong>, then copy and
+                  paste the link here.
+                </p>
+              </div>
             </div>
           </Card>
 
@@ -531,8 +557,7 @@ export function TutorApplication() {
           <Card className="border-olive/20 bg-olive/5 shadow-none">
             <p className="flex items-start gap-2 text-xs leading-relaxed text-ink">
               <Clock3 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-olive" />
-              Applications are typically reviewed within a few days. You'll be
-              notified once an admin makes a decision.
+              Applications are typically reviewed within a few days.
             </p>
           </Card>
 
