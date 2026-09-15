@@ -616,9 +616,9 @@ export function TutorProfileEdit() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div>
       <Card>
-        <h1 className="font-serif text-2xl font-semibold text-ink">Edit tutor profile</h1>
+        <h1 className="font-serif text-2xl font-semibold text-ink">Tutor Information</h1>
         <p className="mt-1 text-sm text-muted">
           This is what students see when they browse tutors.
         </p>

@@ -11,6 +11,7 @@ import type { Subject, CreateSubjectPayload } from "../types";
  */
 export const getSubjects = async (): Promise<Subject[]> => {
   const response = await api.get<Subject[]>("/subjects");
+  console.log("Fetched subjects:", response.data);
   return response.data;
 };
 

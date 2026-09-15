@@ -38,12 +38,12 @@ const studentNavItems = [
     icon: GraduationCap,
     ready: true,
   },
-  {
-    to: "/tutor-profile",
-    label: "Tutor profile",
-    icon: GraduationCap,
-    ready: true,
-  },
+  // {
+  //   to: "/tutor-profile",
+  //   label: "Tutor profile",
+  //   icon: GraduationCap,
+  //   ready: true,
+  // },
 ] as const;
 
 const tutorNavItems = [
