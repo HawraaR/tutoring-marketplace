@@ -46,10 +46,140 @@ async function uploadFilesToSupabase(
   return uploadedUrls;
 }
 
+// export const applyAsTutor = async (req: Request, res: Response) => {
+//   try {
+//     console.log("Multer parsed req.body:", req.body);
+//     console.log("Multer parsed req.files:", req.files);
+//     const userId = getUserId(req);
+//     const {
+//       headline,
+//       bio,
+//       hourlyRate,
+//       subjectIds,
+//       education,
+//       languages,
+//       experience,
+//       meetingUrl,
+//     } = req.body;
+
+//     console.log("Received tutor meeting url:", meetingUrl);
+
+//     // Process & normalize meeting URL
+//     let formattedMeetingUrl: string | null = null;
+
+//     if (typeof meetingUrl === "string" && meetingUrl.trim() !== "") {
+//       let cleanedUrl = meetingUrl.trim();
+
+//       // 1. Prepend protocol if missing
+//       if (!/^https?:\/\//i.test(cleanedUrl)) {
+//         cleanedUrl = `https://${cleanedUrl}`;
+//       }
+
+//       // 2. Validate using Native URL Parser instead of tricky regex
+//       try {
+//         const parsed = new URL(cleanedUrl);
+
+//         // Ensure it has a valid hostname with at least one dot (e.g. meet.google.com)
+//         if (!parsed.hostname.includes(".")) {
+//           throw new Error("Invalid domain");
+//         }
+
+//         formattedMeetingUrl = parsed.toString();
+//       } catch {
+//         return res.status(400).json({
+//           error:
+//             "Please enter a valid meeting link (e.g. meet.google.com/abc-defg-hij)",
+//         });
+//       }
+//     }
+
+//     // Check if user already has a tutor profile
+//     const existingUser = await prisma.user.findUnique({
+//       where: { id: userId },
+//       include: { tutorProfile: true },
+//     });
+
+//     if (existingUser?.tutorProfile) {
+//       return res
+//         .status(400)
+//         .json({ error: "Tutor profile already exists for this user" });
+//     }
+
+//     // Process file uploads if any certificates were submitted
+//     let certificateUrls: string[] = [];
+//     const files = req.files as Express.Multer.File[];
+//     if (files && files.length > 0) {
+//       certificateUrls = await uploadFilesToSupabase(files, userId!);
+//     }
+
+//     // Safely parse JSON strings (FormData transmits arrays as JSON strings)
+//     const parsedLanguages =
+//       typeof languages === "string"
+//         ? JSON.parse(languages)
+//         : languages || ["English"];
+//     const parsedExperience =
+//       typeof experience === "string"
+//         ? JSON.parse(experience)
+//         : experience || [];
+//     const parsedSubjectIds =
+//       typeof subjectIds === "string" ? JSON.parse(subjectIds) : subjectIds;
+
+//     // Create profile in Prisma with the uploaded certificate URLs
+//     const updatedUser = await prisma.user.update({
+//       where: { id: userId },
+//       data: {
+//         // isTutor: true,
+//         tutorProfile: {
+//           create: {
+//             headline,
+//             bio,
+//             hourlyRate: parseFloat(hourlyRate) || 0,
+//             education,
+//             languages: parsedLanguages,
+//             certificates: certificateUrls,
+//             experience: parsedExperience,
+//             meetingUrl: formattedMeetingUrl,
+//             verificationStatus: "PENDING",
+//           },
+//         },
+//       },
+//       select: {
+//         id: true,
+//         email: true,
+//         isStudent: true,
+//         isTutor: true,
+//         isAdmin: true,
+//         tutorProfile: true,
+//       },
+//     });
+
+  
+
+//     // Link taught subjects
+//     if (Array.isArray(parsedSubjectIds) && parsedSubjectIds.length > 0) {
+//       await prisma.tutorSubject.createMany({
+//         data: parsedSubjectIds.map((subjectId: string) => ({
+//           tutorId: userId!,
+//           subjectId,
+//         })),
+//         skipDuplicates: true,
+//       });
+//     }
+
+//     return res.status(201).json({
+//       message: "Tutor application submitted successfully",
+//       user: updatedUser,
+//     });
+//   } catch (error) {
+//     console.error("Apply Tutor Error:", error);
+//     return res.status(500).json({ error: "Failed to create tutor profile" });
+//   }
+// };
+
 export const applyAsTutor = async (req: Request, res: Response) => {
   try {
     console.log("Multer parsed req.body:", req.body);
-  console.log("Multer parsed req.files:", req.files);
+    console.log("Multer parsed req.files:", req.files);
     const userId = getUserId(req);
     const {
       headline,
@@ -62,46 +192,35 @@ export const applyAsTutor = async (req: Request, res: Response) => {
       meetingUrl,
     } = req.body;
 
-    console.log("Received tutor meeting url:", meetingUrl )
+    console.log("Received tutor meeting url:", meetingUrl);
 
     // Process & normalize meeting URL
     let formattedMeetingUrl: string | null = null;
 
-if (typeof meetingUrl === "string" && meetingUrl.trim() !== "") {
-  let cleanedUrl = meetingUrl.trim();
+    if (typeof meetingUrl === "string" && meetingUrl.trim() !== "") {
+      let cleanedUrl = meetingUrl.trim();
 
-  // 1. Prepend protocol if missing
-  if (!/^https?:\/\//i.test(cleanedUrl)) {
-    cleanedUrl = `https://${cleanedUrl}`;
-  }
+      // 1. Prepend protocol if missing
+      if (!/^https?:\/\//i.test(cleanedUrl)) {
+        cleanedUrl = `https://${cleanedUrl}`;
+      }
 
-  // 2. Validate using Native URL Parser instead of tricky regex
-  try {
-    const parsed = new URL(cleanedUrl);
-    
-    // Ensure it has a valid hostname with at least one dot (e.g. meet.google.com)
-    if (!parsed.hostname.includes(".")) {
-      throw new Error("Invalid domain");
-    }
+      // 2. Validate using Native URL Parser instead of tricky regex
+      try {
+        const parsed = new URL(cleanedUrl);
 
-    formattedMeetingUrl = parsed.toString();
-  } catch {
-    return res.status(400).json({
-      error: "Please enter a valid meeting link (e.g. meet.google.com/abc-defg-hij)",
-    });
-  }
-}
+        // Ensure it has a valid hostname with at least one dot (e.g. meet.google.com)
+        if (!parsed.hostname.includes(".")) {
+          throw new Error("Invalid domain");
+        }
 
-    // Check if user already has a tutor profile
-    const existingUser = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { tutorProfile: true },
-    });
-
-    if (existingUser?.tutorProfile) {
-      return res
-        .status(400)
-        .json({ error: "Tutor profile already exists for this user" });
+        formattedMeetingUrl = parsed.toString();
+      } catch {
+        return res.status(400).json({
+          error:
+            "Please enter a valid meeting link (e.g. meet.google.com/abc-defg-hij)",
+        });
+      }
     }
 
     // Process file uploads if any certificates were submitted
@@ -123,37 +242,45 @@ if (typeof meetingUrl === "string" && meetingUrl.trim() !== "") {
     const parsedSubjectIds =
       typeof subjectIds === "string" ? JSON.parse(subjectIds) : subjectIds;
 
-    // Create profile in Prisma with the uploaded certificate URLs
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        // isTutor: true,
-        tutorProfile: {
-          create: {
-            headline,
-            bio,
-            hourlyRate: parseFloat(hourlyRate) || 0,
-            education,
-            languages: parsedLanguages,
-            certificates: certificateUrls,
-            experience: parsedExperience,
-            meetingUrl: formattedMeetingUrl,
-            verificationStatus: "PENDING",
-          },
-        },
+    const parsedHourlyRate = parseFloat(hourlyRate) || 0;
+
+    // Upsert the tutor profile (handles both brand new applications and resubmissions for rejected ones)
+    const updatedUser = await prisma.tutorProfile.upsert({
+      where: { userId },
+      update: {
+        headline,
+        bio,
+        education,
+        hourlyRate: parsedHourlyRate,
+        meetingUrl: formattedMeetingUrl,
+        languages: parsedLanguages,
+        experience: parsedExperience,
+        ...(certificateUrls.length > 0 && { certificates: certificateUrls }),
+        verificationStatus: "PENDING", // Resets status so admin sees it's ready for re-review
+        // rejectionReason is intentionally left untouched here so the user can still see it 
+        // until the admin approves their new submission.
       },
-      select: {
-        id: true,
-        email: true,
-        isStudent: true,
-        isTutor: true,
-        isAdmin: true,
-        tutorProfile: true,
+      create: {
+        userId: userId!,
+        headline,
+        bio,
+        education,
+        hourlyRate: parsedHourlyRate,
+        meetingUrl: formattedMeetingUrl,
+        languages: parsedLanguages,
+        experience: parsedExperience,
+        certificates: certificateUrls,
+        verificationStatus: "PENDING",
       },
     });
 
-    // Link taught subjects
+    // Link taught subjects (clear old ones or skip duplicates if needed)
     if (Array.isArray(parsedSubjectIds) && parsedSubjectIds.length > 0) {
+      // Optional: clear existing mappings first if you want a clean override on resubmission
+      await prisma.tutorSubject.deleteMany({
+        where: { tutorId: userId! },
+      });
+
       await prisma.tutorSubject.createMany({
         data: parsedSubjectIds.map((subjectId: string) => ({
           tutorId: userId!,
@@ -294,9 +421,6 @@ export const getMyTutorProfile = async (req: Request, res: Response) => {
   }
 };
 
-
-
-
 export const updateMyTutorProfile = async (req: Request, res: Response) => {
   try {
     const userId = getUserId(req);
@@ -405,7 +529,8 @@ export const updateMyTutorProfile = async (req: Request, res: Response) => {
     if (bio !== undefined) data.bio = bio;
     if (education !== undefined) data.education = education;
     if (hourlyRate !== undefined) data.hourlyRate = parseFloat(hourlyRate) || 0;
-    if (formattedMeetingUrl !== undefined) data.meetingUrl = formattedMeetingUrl;
+    if (formattedMeetingUrl !== undefined)
+      data.meetingUrl = formattedMeetingUrl;
     if (parsedLanguages !== undefined) data.languages = parsedLanguages;
     if (finalCertificates.length > 0) data.certificates = finalCertificates;
     if (parsedExperience !== undefined) data.experience = parsedExperience;
@@ -432,15 +557,6 @@ export const updateMyTutorProfile = async (req: Request, res: Response) => {
     return res.status(500).json({ error: "Failed to update tutor profile" });
   }
 };
-
-
-
-
-
-
-
-
-
 
 // PATCH /api/tutors/me — only an APPROVED tutor may edit their own profile
 // export const updateMyTutorProfile = async (req: Request, res: Response) => {
