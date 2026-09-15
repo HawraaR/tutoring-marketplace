@@ -26,24 +26,64 @@ export function StudentProfileEdit() {
   const [isSaving, setIsSaving] = useState(false);
   const [ ,setSaved] = useState(false);
 
+  // useEffect(() => {
+  //   Promise.all([getMyStudentProfile(), getSubjects().catch(() => [])])
+  //     .then(([{ profile }, subjectCatalog]) => {
+  //       setSelectedSubjectIds(profile.preferredSubjects ?? []);
+  //       console.log("subject catalog", subjectCatalog);
+  //       setAllSubjects(subjectCatalog);
+  //       setEducationLevel(profile.educationLevel ?? "");
+  //       setMajor(profile.major ?? "");
+  //       setLearningGoals(profile.learningGoals ?? "");
+  //       // setLearningStyle(profile.learningStyle ?? "");
+  //       // setTimezone(profile.timezone ?? "");
+  //       setPreferredLanguage(profile.preferredLanguage ?? "");
+  //       setMaxHourlyRate(
+  //         profile.maxHourlyRate != null ? String(profile.maxHourlyRate) : "",
+  //       );
+  //     })
+  //     .catch(() => setErrorMessages(["Failed to load your profile."]))
+  //     .finally(() => setLoading(false));
+  // }, []);
+
+
+
   useEffect(() => {
-    Promise.all([getMyStudentProfile(), getSubjects().catch(() => [])])
-      .then(([{ profile }, subjectCatalog]) => {
-        setSelectedSubjectIds(profile.preferredSubjects ?? []);
-        setAllSubjects(subjectCatalog);
-        setEducationLevel(profile.educationLevel ?? "");
-        setMajor(profile.major ?? "");
-        setLearningGoals(profile.learningGoals ?? "");
-        // setLearningStyle(profile.learningStyle ?? "");
-        // setTimezone(profile.timezone ?? "");
-        setPreferredLanguage(profile.preferredLanguage ?? "");
-        setMaxHourlyRate(
-          profile.maxHourlyRate != null ? String(profile.maxHourlyRate) : "",
-        );
-      })
-      .catch(() => setErrorMessages(["Failed to load your profile."]))
-      .finally(() => setLoading(false));
-  }, []);
+  Promise.all([getMyStudentProfile(), getSubjects().catch(() => [])])
+    .then(([profileRes, subjectCatalog]) => {
+      // 1. Inspect what Promise.all actually receives
+      console.log("Profile response:", profileRes);
+      console.log("Subject catalog in component:", subjectCatalog);
+
+      // 2. Ensure we extract the array even if wrapped in an object (.data or .subjects)
+      const list = Array.isArray(subjectCatalog)
+        ? subjectCatalog
+        : (subjectCatalog as any)?.data || (subjectCatalog as any)?.subjects || [];
+
+      setAllSubjects(list);
+
+      // 3. Extract profile & preferred subjects safely
+      const profile = profileRes?.profile || profileRes;
+      const rawSubjects = profile?.preferredSubjects ?? [];
+      const subjectIds = rawSubjects.map((s: any) =>
+        typeof s === "string" ? s : s?.id
+      );
+
+      setSelectedSubjectIds(subjectIds);
+      setEducationLevel(profile?.educationLevel ?? "");
+      setMajor(profile?.major ?? "");
+      setLearningGoals(profile?.learningGoals ?? "");
+      setPreferredLanguage(profile?.preferredLanguage ?? "");
+      setMaxHourlyRate(
+        profile?.maxHourlyRate != null ? String(profile.maxHourlyRate) : ""
+      );
+    })
+    .catch((err) => {
+      console.error("Profile load error:", err);
+      setErrorMessages(["Failed to load your profile."]);
+    })
+    .finally(() => setLoading(false));
+}, []);
 
   const toggleSubject = (id: string) => {
     setSelectedSubjectIds((prev) =>

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-expressions */
 import { CalendarDays } from "lucide-react";
 import { useSessions } from "../hooks/useSessions";
 import { SessionControls } from "../components/sessions/SessionControls";
@@ -27,7 +26,12 @@ export function SessionPage() {
     <div className="mx-auto flex max-w-7xl flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-medium tracking-[0.16em] text-burgundy uppercase">Autumn 2026</p>
+          <p className="text-xs font-medium tracking-[0.16em] text-burgundy uppercase">
+            {new Date().toLocaleDateString("en-US", {
+              month: "long",
+              year: "numeric",
+            })}
+          </p>
           <h1 className="font-serif text-2xl font-semibold text-ink">
             {isTutorMode ? "Teaching Sessions" : "My Sessions"}
           </h1>
@@ -84,14 +88,15 @@ export function SessionPage() {
         ) : (
           <div className="flex min-h-64 flex-col items-center justify-center px-5 text-center">
             <CalendarDays className="h-8 w-8 text-border-subtle" />
-            <h2 className="mt-3 font-serif text-lg font-semibold text-ink">No {activeTab} sessions</h2>
+            <h2 className="mt-3 font-serif text-lg font-semibold text-ink">
+              No {activeTab} sessions
+            </h2>
             <p className="mt-1 max-w-sm text-sm text-muted">
               {isTutorMode
                 ? "You have no teaching sessions matching this view."
                 : "Try another subject filter or book a new tutoring session."}
             </p>
           </div>
-          
         )}
       </section>
       {bookingOpen && (
@@ -102,5 +107,4 @@ export function SessionPage() {
       )}
     </div>
   );
-  
 }
