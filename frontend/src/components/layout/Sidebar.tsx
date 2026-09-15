@@ -64,7 +64,8 @@ export function Sidebar({
   const [unreadMessages, setUnreadMessages] = useState(0);
   
   const hasBothRoles = Boolean(user?.isStudent && user?.isTutor);
-  const hasAppliedAsTutor = Boolean(user?.tutorProfile);
+  // const hasAppliedAsTutor = Boolean(user?.tutorProfile);
+  const isTutor = Boolean(user?.isTutor);
 
   const navItems = [
     ...(activeRole === "admin"
@@ -72,8 +73,9 @@ export function Sidebar({
       : activeRole === "tutor"
         ? tutorNavItems
         : studentNavItems
-    ).filter((item) => {
-      if (item.to === "/become-a-tutor") return !hasAppliedAsTutor;
+    )
+    .filter((item) => {
+      if (item.to === "/become-a-tutor") return !isTutor;
       return true;
     }),
   ];

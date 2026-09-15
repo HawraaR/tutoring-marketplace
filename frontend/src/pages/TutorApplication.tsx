@@ -65,29 +65,37 @@ export function TutorApplication() {
   const { user, refreshUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const existing = user?.tutorProfile;
+  const isRejected = existing?.verificationStatus === "REJECTED";
+
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>([]);
-  const [headline, setHeadline] = useState("");
-  const [bio, setBio] = useState("");
-  const [education, setEducation] = useState("");
-  const [hourlyRate, setHourlyRate] = useState("");
-  const [languages, setLanguages] = useState("English");
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>(
+    isRejected ? existing?.subjects?.map((s: any) => s.id) || [] : []
+  );
+  const [headline, setHeadline] = useState(isRejected ? existing?.headline || "" : "");
+  const [bio, setBio] = useState(isRejected ? existing?.bio || "" : "");
+  const [education, setEducation] = useState(isRejected ? existing?.education || "" : "");
+  const [hourlyRate, setHourlyRate] = useState(
+    isRejected ? String(existing?.hourlyRate || "") : ""
+  );
+  const [languages, setLanguages] = useState(
+    isRejected ? existing?.languages?.join(", ") || "English" : "English"
+  );
   const [certificateFiles, setCertificateFiles] = useState<File[]>([]);
-  const [experience, setExperience] = useState("");
-  const [meetingUrl, setMeetingUrl] = useState("");
+  const [experience, setExperience] = useState(
+    isRejected ? existing?.experience?.join(", ") || "" : ""
+  );
+  const [meetingUrl, setMeetingUrl] = useState(isRejected ? existing?.meetingUrl || "" : "");
 
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const existing = user?.tutorProfile;
-
   useEffect(() => {
-    if (existing) return;
     getSubjects()
       .then(setSubjects)
       .catch(() => setSubjects([]));
-  }, [existing]);
+  }, []);
 
   const toggleSubject = (id: string) => {
     setSelectedSubjectIds((prev) =>
@@ -118,7 +126,9 @@ export function TutorApplication() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  if (existing) {
+  // Only lock out if they have an active profile that is PENDING or APPROVED.
+  // If REJECTED, let them fall through to the form to resubmit!
+  if (existing && existing.verificationStatus !== "REJECTED") {
     const copy = statusCopy[existing.verificationStatus] ?? statusCopy.PENDING;
     const StatusIcon = copy.icon;
     return (
@@ -138,13 +148,6 @@ export function TutorApplication() {
                 {copy.title}
               </p>
               <p className="mt-1 text-sm text-muted">{copy.body}</p>
-              {existing.verificationStatus === "REJECTED" &&
-                existing.rejectionReason && (
-                  <p className="mt-3 rounded-sm border border-error/20 bg-error/5 p-3 text-sm text-muted">
-                    <span className="font-medium text-ink">Reason: </span>
-                    {existing.rejectionReason}
-                  </p>
-                )}
             </div>
           </div>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -251,13 +254,27 @@ export function TutorApplication() {
     <div className="mx-auto max-w-7xl px-4">
       <div className="mb-6">
         <h1 className="font-serif text-2xl font-semibold text-ink">
-          Become a tutor
+          {isRejected ? "Resubmit your tutor application" : "Become a tutor"}
         </h1>
         <p className="mt-1 text-sm text-muted">
-          Tell us about what you can teach. Your application will be reviewed by
-          an admin.
+          {isRejected
+            ? "Your previous application wasn't approved, but you can update your details below and resubmit."
+            : "Tell us about what you can teach. Your application will be reviewed by an admin."}
         </p>
       </div>
+
+      {isRejected && existing?.rejectionReason && (
+        <div className="mb-6 flex items-start gap-2 rounded-sm border border-error/30 bg-error/5 p-4">
+          <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-error" />
+          <div>
+            <p className="text-sm font-medium text-error">Previous Application Rejected</p>
+            <p className="mt-1 text-sm text-muted">
+              <span className="font-medium text-ink">Reason: </span>
+              {existing.rejectionReason}
+            </p>
+          </div>
+        </div>
+      )}
 
       {errorMessages.length > 0 && (
         <div className="mb-6 flex items-start gap-2 rounded-sm border border-error/30 bg-error/5 p-3">
@@ -454,13 +471,6 @@ export function TutorApplication() {
                 onChange={(e) => setHourlyRate(e.target.value)}
                 required
               />
-              {/* <Input
-                label="Meeting URL"
-                placeholder="https://meet.google.com/i.."
-                type="url"
-                value={meetingUrl}
-                onChange={(e) => setMeetingUrl(e.target.value)}
-              /> */}
               <div className="flex flex-col gap-1.5">
                 <Input
                   label="Meeting URL"
@@ -489,7 +499,7 @@ export function TutorApplication() {
           </Card>
 
           <Button type="submit" disabled={isLoading} className="self-end px-6">
-            {isLoading ? "Submitting…" : "Submit application"}
+            {isLoading ? "Submitting…" : isRejected ? "Resubmit application" : "Submit application"}
           </Button>
         </div>
 
