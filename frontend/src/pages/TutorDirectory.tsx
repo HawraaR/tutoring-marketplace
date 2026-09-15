@@ -81,7 +81,7 @@ export default function TutorDirectory() {
   return (
     <div
       id="directory-top"
-      className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8"
+      className="w-full "
     >
       {/* ── Header: count + sort + view toggle ──────── */}
       <div className="flex flex-wrap items-end justify-between gap-4">
