@@ -3,7 +3,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { api } from "../api/axios";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { createConversation } from "../api/messageAPI";
 import {
   formatSessionDates,
@@ -20,11 +20,15 @@ export function useSessions() {
   const { user, activeRole } = useAuth();
   const userId = user?.id;
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isTutorMode = activeRole === "tutor";
 
   const [sessions, setSessions] = useState<UnifiedSession[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<SessionTab>("upcoming");
+  const [activeTab, setActiveTab] = useState<SessionTab>(() => {
+    const scope = searchParams.get("scope");
+    return scope === "past" || scope === "cancelled" ? scope : "upcoming";
+  });
   const [subjectFilter, setSubjectFilter] = useState<string>("all");
 
   // Track active role shifts without triggering synchronous re-renders in effects

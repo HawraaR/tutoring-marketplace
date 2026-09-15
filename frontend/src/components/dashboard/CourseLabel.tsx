@@ -2,6 +2,7 @@ const accent: Record<string, string> = {
   burgundy: "border-l-burgundy bg-burgundy/10 text-burgundy",
   slate: "border-l-slate-blue bg-slate-blue/10 text-slate-blue",
   olive: "border-l-olive bg-olive/10 text-olive",
+  charcoal: "border-l-charcoal bg-charcoal/10 text-charcoal",
 };
 
 interface CourseLabelProps {
