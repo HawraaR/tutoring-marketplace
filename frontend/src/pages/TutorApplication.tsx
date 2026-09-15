@@ -19,6 +19,7 @@ import { useAuth } from "../context/AuthContext";
 import { applyAsTutor } from "../api/tutorProfileAPI";
 import { getSubjects } from "../api/subjectAPI";
 import type { Subject } from "../types";
+import { toast } from "react-hot-toast";
 
 const toList = (value: string): string[] =>
   value
@@ -224,7 +225,7 @@ export function TutorApplication() {
         Object.fromEntries(data.entries()),
       );
       await applyAsTutor(data);
-
+      toast.success("Tutor application submitted successfully!");
       await refreshUser();
       setSubmitted(true);
     } catch (error: any) {
@@ -236,6 +237,7 @@ export function TutorApplication() {
           error?.response?.data?.error || "Failed to submit application.",
         ]);
       }
+      toast.error("Failed to submit tutor application. Please try again.");
     } finally {
       setIsLoading(false);
     }
