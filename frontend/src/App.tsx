@@ -23,6 +23,7 @@ import { TutorProfileEdit } from "./pages/TutorProfileEdit";
 import TutorProfileDetail from "./pages/TutorProfileDetail";
 import { StudentProfileEdit } from "./pages/StudentProfileEdit";
 import { Settings } from "./pages/Settings";
+import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import { io } from "socket.io-client";
 import { useDashboard } from "./hooks/useDashboard";
 
@@ -77,6 +78,8 @@ export const App: React.FC = () => {
               </AuthLayout>
             }
           />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/privacy-policy" element={<Navigate to="/privacy" replace />} />
 
           {/* Standard Authenticated Routes */}
           <Route element={<ProtectedRoute />}>

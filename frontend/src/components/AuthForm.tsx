@@ -5,7 +5,7 @@ import type { ApiErrorResponse } from "../types";
 
 import { Input, Button } from "./ui";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export const AuthForm: React.FC = () => {
   const navigate = useNavigate();
@@ -248,7 +248,7 @@ export const AuthForm: React.FC = () => {
         {/* Footer Links */}
         <div className="flex items-center justify-between text-xs text-muted pt-6">
           <div className="flex gap-4">
-            <a href="#privacy" className="hover:text-ink">Privacy Policy</a>
+            <Link to="/privacy" className="hover:text-ink">Privacy Policy</Link>
             <a href="#terms" className="hover:text-ink">Terms of Service</a>
             <a href="#help" className="hover:text-ink">Help Center</a>
           </div>
