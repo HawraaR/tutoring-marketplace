@@ -4,7 +4,7 @@ export default function TutoringReqs() {
   const navigate = useNavigate();
 
   return (
-    <div className="w-full px-8 py-8">
+    <div className="w-full">
       {/* Header */}
       <div className="border-b border-border-subtle pb-6">
         <span className="inline-block rounded-md bg-brand-primary/10 px-3 py-1 text-xs font-semibold text-brand-primary">
@@ -44,7 +44,7 @@ export default function TutoringReqs() {
             2. Submit Form
           </h3>
           <p className="mt-2 text-sm leading-relaxed text-muted">
-            Fill out your academic background, rate, bio, and subjects taught.
+            Configure your headline, education, hourly rate, bio, and subjects taught.
           </p>
         </div>
 
@@ -65,21 +65,21 @@ export default function TutoringReqs() {
         </div>
       </div>
 
-      {/* Field Explanations Section */}
+      {/* Field Explanations Section matched to TutorProfile Schema */}
       <div className="mt-8 rounded-xl border border-border-subtle bg-white p-8 shadow-sm">
         <h2 className="font-serif text-2xl font-bold text-ink">
           Required Application Fields Explained
         </h2>
         <p className="mt-1 text-sm text-muted">
-          Here is why we request specific details in your application:
+          Here is why we request specific details in your application profile:
         </p>
 
         <div className="mt-6 grid gap-4">
-          {/* Headline */}
+          {/* headline */}
           <div className="rounded-lg border border-border-subtle bg-surface/50 p-5">
             <div className="flex items-center justify-between">
               <span className="text-base font-semibold text-ink">
-                Professional Headline
+                Professional Headline 
               </span>
               <span className="rounded bg-slate-200/60 px-2.5 py-0.5 text-xs font-medium text-slate-700">
                 Required
@@ -93,11 +93,11 @@ export default function TutoringReqs() {
             </p>
           </div>
 
-          {/* Academic Background */}
+          {/* education */}
           <div className="rounded-lg border border-border-subtle bg-surface/50 p-5">
             <div className="flex items-center justify-between">
               <span className="text-base font-semibold text-ink">
-                Academic Level & Education
+                Academic Background 
               </span>
               <span className="rounded bg-slate-200/60 px-2.5 py-0.5 text-xs font-medium text-slate-700">
                 Required
@@ -111,11 +111,11 @@ export default function TutoringReqs() {
             </p>
           </div>
 
-          {/* Bio & Teaching Philosophy */}
+          {/* bio */}
           <div className="rounded-lg border border-border-subtle bg-surface/50 p-5">
             <div className="flex items-center justify-between">
               <span className="text-base font-semibold text-ink">
-                Biography & Teaching Approach
+                Biography & Teaching Philosophy
               </span>
               <span className="rounded bg-slate-200/60 px-2.5 py-0.5 text-xs font-medium text-slate-700">
                 Required
@@ -129,7 +129,7 @@ export default function TutoringReqs() {
             </p>
           </div>
 
-          {/* Hourly Rate */}
+          {/* hourlyRate */}
           <div className="rounded-lg border border-border-subtle bg-surface/50 p-5">
             <div className="flex items-center justify-between">
               <span className="text-base font-semibold text-ink">
@@ -142,12 +142,44 @@ export default function TutoringReqs() {
             <p className="mt-2 text-sm leading-relaxed text-muted">
               <strong className="font-medium text-ink">Why we need it:</strong>{" "}
               Ensures transparent pricing across the directory. You set your own
-              compensation based on your experience level and subject
+              compensation (defaulting to 0.0) based on your experience level and subject
               complexity.
             </p>
           </div>
 
-          {/* Certificates & Experience */}
+          {/* languages */}
+          <div className="rounded-lg border border-border-subtle bg-surface/50 p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-base font-semibold text-ink">
+                Spoken Languages
+              </span>
+              <span className="rounded bg-slate-200/60 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+                Required
+              </span>
+            </div>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              <strong className="font-medium text-ink">Why we need it:</strong>{" "}
+              Lets students know which languages you are comfortable teaching in (defaults to English).
+            </p>
+          </div>
+
+          {/* meetingUrl */}
+          <div className="rounded-lg border border-border-subtle bg-surface/50 p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-base font-semibold text-ink">
+                Virtual Classroom Link
+              </span>
+              <span className="rounded bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">
+                Optional
+              </span>
+            </div>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              <strong className="font-medium text-ink">Why we need it:</strong>{" "}
+              Stores your default Google Meet so students can seamlessly join scheduled tutoring sessions.
+            </p>
+          </div>
+
+          {/* certificates & experience arrays */}
           <div className="rounded-lg border border-border-subtle bg-surface/50 p-5">
             <div className="flex items-center justify-between">
               <span className="text-base font-semibold text-ink">
@@ -165,11 +197,11 @@ export default function TutoringReqs() {
             </p>
           </div>
 
-          {/* Video Intro */}
-          <div className="rounded-lg border border-border-subtle bg-surface/50 p-5">
+          {/* videoIntroUrl */}
+          {/* <div className="rounded-lg border border-border-subtle bg-surface/50 p-5">
             <div className="flex items-center justify-between">
               <span className="text-base font-semibold text-ink">
-                Video Introduction Link
+                Video Introduction Link 
               </span>
               <span className="rounded bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">
                 Optional
@@ -177,10 +209,10 @@ export default function TutoringReqs() {
             </div>
             <p className="mt-2 text-sm leading-relaxed text-muted">
               <strong className="font-medium text-ink">Why we need it:</strong>{" "}
-              A short 1-minute video introducing yourself builds trust and
-              significantly increases booking rates once approved.
+              A short introductory video builds trust and
+              significantly increases booking conversion rates once approved.
             </p>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -191,7 +223,7 @@ export default function TutoringReqs() {
             Ready to begin?
           </h3>
           <p className="mt-1 text-sm text-muted">
-            Make sure you have your academic background details ready.
+            Make sure you have your academic background and rate details ready.
           </p>
         </div>
         <div className="flex items-center gap-4">
