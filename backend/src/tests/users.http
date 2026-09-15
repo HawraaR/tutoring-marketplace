@@ -1,3 +1,7 @@
+@baseUrl = http://localhost:5000/api
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1MzQ2ZWViZC03Zjk5LTQ4ZWMtOGE1NC05Y2UxNGQ2ZTdmOTIiLCJlbWFpbCI6ImxpYW0uc3R1ZGVudEBleGFtcGxlLmNvbSIsImlhdCI6MTc4OTQ2NTE2NiwiZXhwIjoxNzkwMDY5OTY2fQ.eiKnayeJVBDRnOfpixOCWycSxhVYN-IBA4-S2YYDCc4
+
+
 ### Create a new user
 POST http://localhost:5000/api/users
 Content-Type: application/json
@@ -25,3 +29,10 @@ GET http://localhost:5000/api/users
 
 ### Fetch a specific user by ID
 GET http://localhost:5000/api/users/1
+
+###
+
+### Get Current User Profile (getMe)
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{authToken}}
+Content-Type: application/json

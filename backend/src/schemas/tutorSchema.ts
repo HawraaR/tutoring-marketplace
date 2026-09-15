@@ -17,7 +17,7 @@ export const tutorApplicationSchema = z.object({
   bio: z.string().trim().min(1, "Bio is required"),
   education: z.string().trim().min(1, "Education is required"),
   hourlyRate: z.coerce.number().min(0, "Hourly rate must be 0 or more"),
-  
+  meetingUrl: z.string().optional().nullable(),   // 👈 ADD THIS FIELD!
   // Accept either an array or a JSON string / comma-separated string
   subjectIds: z.preprocess((val) => {
     if (typeof val === "string") {
@@ -50,7 +50,8 @@ export const tutorProfileUpdateSchema = z.object({
   bio: z.string().trim().min(1, "Bio is required"),
   education: z.string().trim().min(1, "Education is required"),
   hourlyRate: z.coerce.number().min(0, "Hourly rate must be 0 or more"),
-  
+    meetingUrl: z.string().optional().nullable(),   // 👈 ADD THIS FIELD!
+
   subjectIds: z.preprocess((val) => {
     if (typeof val === "string") {
       try { return JSON.parse(val); } catch { return val.split(",").map(s => s.trim()); }

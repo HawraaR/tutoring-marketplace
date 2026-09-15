@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import { Card, Input, Button } from "../components/ui";
+import  { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 // Import your pre-existing profile edit components/pages
-import {StudentProfileEdit} from "./StudentProfileEdit"; 
-import {TutorProfileEdit} from "./TutorProfileEdit";
+import { StudentProfileEdit } from "./StudentProfileEdit";
+import { TutorProfileEdit } from "./TutorProfileEdit";
+import { UserProfileEdit } from "./UserProfileEdit";
 
 interface TabOption {
   id: "user" | "student" | "tutor";
@@ -12,32 +12,34 @@ interface TabOption {
 
 export function Settings() {
   const { user } = useAuth();
-  
+
   // Check if user is a verified tutor to conditionally display the tab
   const isVerifiedTutor = user?.tutorProfile?.verificationStatus === "APPROVED";
+  const isStudent = user?.isStudent;
 
   const tabs: TabOption[] = [
     { id: "user", label: "User Account" },
-    { id: "student", label: "Student Profile" },
-    ...(isVerifiedTutor ? [{ id: "tutor" as const, label: "Tutor Profile" }] : []),
+    // { id: "student", label: "Student Profile" },
+    ...(isStudent
+      ? [{ id: "student" as const, label: "Student Profile" }]
+      : []),
+    ...(isVerifiedTutor
+      ? [{ id: "tutor" as const, label: "Tutor Profile" }]
+      : []),
   ];
 
-  const [activeTab, setActiveTab] = useState<"user" | "student" | "tutor">("user");
-
-  // Basic User Account local state
-  const [firstName, setFirstName] = useState(user?.firstName || "");
-  const [lastName, setLastName] = useState(user?.lastName || "");
-
-  const handleSaveUser = (e: React.FormEvent) => {
-    e.preventDefault();
-    alert(`User credentials updated: ${firstName} ${lastName}`);
-  };
+  const [activeTab, setActiveTab] = useState<"user" | "student" | "tutor">(
+    "user",
+  );
 
   return (
-    <div >
-      <h1 className="font-serif text-3xl font-bold text-ink">Account Settings</h1>
+    <div>
+      <h1 className="font-serif text-3xl font-bold text-ink">
+        Account Settings
+      </h1>
       <p className="mt-1 text-sm text-muted">
-        Manage your user credentials, student profile, and tutor preferences in one place.
+        Manage your user credentials, student profile, and tutor preferences in
+        one place.
       </p>
 
       {/* Settings Tab Header */}
@@ -65,36 +67,7 @@ export function Settings() {
       {/* Tab Contents */}
       <div className="mt-6">
         {/* Tab 1: Base User Account Form */}
-        {activeTab === "user" && (
-          <Card>
-            <h2 className="font-serif text-xl font-semibold text-ink">User Credentials</h2>
-            <p className="mt-1 text-xs text-muted">Update your standard account identity.</p>
-
-            <form className="mt-6 flex flex-col gap-4" onSubmit={handleSaveUser}>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Input
-                  label="First Name"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                />
-                <Input
-                  label="Last Name"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                />
-              </div>
-              <Input
-                label="Email Address"
-                type="email"
-                value={user?.email || ""}
-                disabled
-              />
-              <Button type="submit" className="mt-2 w-fit">
-                Save Account Changes
-              </Button>
-            </form>
-          </Card>
-        )}
+        {activeTab === "user" && <UserProfileEdit />}
 
         {/* Tab 2: Existing Student Profile Page Form & Logic */}
         {activeTab === "student" && <StudentProfileEdit />}

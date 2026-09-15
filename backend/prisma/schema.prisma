@@ -55,6 +55,8 @@ model TutorProfile {
   education  String?  
   languages  String[] @default(["English"])
 
+  meetingUrl String?  // Stores Google Meet / Zoom link
+
   // Status Workflow
   verificationStatus TutorStatus @default(PENDING)
   rejectionReason    String?

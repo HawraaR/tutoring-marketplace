@@ -6,6 +6,17 @@ export interface CreateUserInput {
   password?: string;
 }
 
+export interface UpdateUserPayload {
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface MessageContact {
   id: string;
   firstName?: string | null;
@@ -47,5 +58,27 @@ export const usersAPI = {
   ): Promise<User> => {
     const response = await api.patch(`/users/${userId}/roles`, roles);
     return response.data.user || response.data;
+  },
+  
+  getMe: async () => {
+    const response = await api.get("/users/me");
+    console.log('Fetched current user data:', response.data);
+    return response.data; // Returns { user: { id, email, firstName, lastName, ... } }
+  },
+
+  // Update current user credentials (firstName, lastName, email)
+  updateMe: async (data: UpdateUserPayload) => {
+    const response = await api.put("/users/me", data);
+    return response.data; // Returns { user, message }
+  },
+
+  // Change current user password
+  changePassword: async (data: ChangePasswordPayload) => {
+    const response = await api.put("/users/change-password", data);
+    return response.data; // Returns { message }
+  },
+  getUserById: async (id: string) => {
+    const response = await api.get(`/users/${id}`);
+    return response.data; // Returns { user }
   },
 };

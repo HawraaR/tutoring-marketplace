@@ -54,12 +54,12 @@ const tutorNavItems = [
   // { to: "#", label: "Earnings", icon: DollarSign, ready: false },
   { to: "/messages", label: "Messages", icon: MessageSquare, ready: true },
   // { to: "/profile", label: "My profile", icon: UserRound, ready: true },
-  {
-    to: "/tutor-profile",
-    label: "Tutor profile",
-    icon: GraduationCap,
-    ready: true,
-  },
+  // {
+  //   to: "/tutor-profile",
+  //   label: "Tutor profile",
+  //   icon: GraduationCap,
+  //   ready: true,
+  // },
 ] as const;
 
 const adminNavItems = [
@@ -105,13 +105,13 @@ export function Sidebar({
         : studentNavItems
     ).filter((item) => {
       if (item.to === "/become-a-tutor") return !hasAppliedAsTutor;
-      if (item.to === "/tutor-profile") return hasAppliedAsTutor;
+      // if (item.to === "/tutor-profile") return hasAppliedAsTutor;
       return true;
     }),
     settingsNavItem,
   ];
   useEffect(() => {
-    let isMounted = true;
+    const isMounted = true;
 
     const refreshUnreadMessages = async () => {
       if (!user?.id || activeRole === "admin") return;

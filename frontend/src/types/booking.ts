@@ -7,7 +7,7 @@ export interface Booking {
   subjectId: string;
   availabilitySlotId?: string | null;
   startTime: string; // ISO DateTime string
-  endTime: string;   // ISO DateTime string
+  endTime: string; // ISO DateTime string
   status: BookingStatus;
   totalPrice?: number | null;
   notes?: string | null;
@@ -26,6 +26,9 @@ export interface Booking {
     lastName: string;
     email: string;
     title?: string;
+    tutorProfile?: {
+      meetingUrl?: string | null;
+    } | null;
   };
   subject?: {
     id: string;
@@ -89,14 +92,14 @@ export interface UnifiedSession {
     email: string;
   };
   // Ensure you also have the raw booking ID available to send to the backend
-  bookingId?: string; 
+  bookingId?: string;
 }
 
 // Payload for creating a new booking (POST /bookings)
 export interface CreateBookingPayload {
   subjectId: string;
   startTime: string; // ISO DateTime string
-  endTime: string;   // ISO DateTime string
+  endTime: string; // ISO DateTime string
   availabilitySlotId?: string;
   totalPrice?: number;
   notes?: string;
@@ -124,7 +127,7 @@ export interface OpenSlot {
   id: string;
   tutorId: string;
   startTime: string; // ISO
-  endTime: string;   // ISO
+  endTime: string; // ISO
   isBooked: boolean;
   tutor: {
     id: string;

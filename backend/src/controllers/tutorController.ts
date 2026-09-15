@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import multer from "multer";
 import { prisma } from "../db";
 import { supabase } from "../supabase"; // Adjust path to your supabase config
-import { TutorStatus } from "@prisma/client";
 
 // 1. Configure Multer with 10MB limit and memory storage
 const upload = multer({
@@ -47,43 +46,10 @@ async function uploadFilesToSupabase(
   return uploadedUrls;
 }
 
-// export const applyAsTutor = async (req: Request, res: Response) => {
-//   try {
-//     const userId = getUserId(req);
-//     const files = req.files as Express.Multer.File[];
-
-//     // Use the helper function here! This resolves the unused declaration warning.
-//     const certificateUrls = await uploadFilesToSupabase(files, userId);
-
-//     // Create the TutorProfile in Prisma with the resulting URLs
-//     const tutorProfile = await prisma.tutorProfile.create({
-//       data: {
-//         userId,
-//         headline: req.body.headline,
-//         bio: req.body.bio,
-//         education: req.body.education,
-//         hourlyRate: req.body.hourlyRate,
-//         subjectIds: req.body.subjectIds,
-//         languages: req.body.languages,
-//         experience: req.body.experience,
-//         certificates: certificateUrls, // Save the Supabase public URLs array here
-//         verificationStatus: "PENDING",
-//       },
-//     });
-
-//     return res.status(201).json({
-//       message: "Tutor application submitted successfully",
-//       tutorProfile,
-//     });
-//   } catch (error: any) {
-//     console.error("Apply Tutor Error:", error);
-//     return res.status(500).json({ error: error.message || "Internal server error" });
-//   }
-// };
-
-// POST /api/tutors/apply
 export const applyAsTutor = async (req: Request, res: Response) => {
   try {
+    console.log("Multer parsed req.body:", req.body);
+  console.log("Multer parsed req.files:", req.files);
     const userId = getUserId(req);
     const {
       headline,
@@ -93,7 +59,38 @@ export const applyAsTutor = async (req: Request, res: Response) => {
       education,
       languages,
       experience,
+      meetingUrl,
     } = req.body;
+
+    console.log("Received tutor meeting url:", meetingUrl )
+
+    // Process & normalize meeting URL
+    let formattedMeetingUrl: string | null = null;
+
+if (typeof meetingUrl === "string" && meetingUrl.trim() !== "") {
+  let cleanedUrl = meetingUrl.trim();
+
+  // 1. Prepend protocol if missing
+  if (!/^https?:\/\//i.test(cleanedUrl)) {
+    cleanedUrl = `https://${cleanedUrl}`;
+  }
+
+  // 2. Validate using Native URL Parser instead of tricky regex
+  try {
+    const parsed = new URL(cleanedUrl);
+    
+    // Ensure it has a valid hostname with at least one dot (e.g. meet.google.com)
+    if (!parsed.hostname.includes(".")) {
+      throw new Error("Invalid domain");
+    }
+
+    formattedMeetingUrl = parsed.toString();
+  } catch {
+    return res.status(400).json({
+      error: "Please enter a valid meeting link (e.g. meet.google.com/abc-defg-hij)",
+    });
+  }
+}
 
     // Check if user already has a tutor profile
     const existingUser = await prisma.user.findUnique({
@@ -140,6 +137,7 @@ export const applyAsTutor = async (req: Request, res: Response) => {
             languages: parsedLanguages,
             certificates: certificateUrls,
             experience: parsedExperience,
+            meetingUrl: formattedMeetingUrl,
             verificationStatus: "PENDING",
           },
         },
@@ -175,6 +173,100 @@ export const applyAsTutor = async (req: Request, res: Response) => {
   }
 };
 
+// POST /api/tutors/apply
+// export const applyAsTutor = async (req: Request, res: Response) => {
+//   try {
+//     const userId = getUserId(req);
+//     const {
+//       headline,
+//       bio,
+//       hourlyRate,
+//       subjectIds,
+//       education,
+//       languages,
+//       experience,
+//     } = req.body;
+
+//     // Check if user already has a tutor profile
+//     const existingUser = await prisma.user.findUnique({
+//       where: { id: userId },
+//       include: { tutorProfile: true },
+//     });
+
+//     if (existingUser?.tutorProfile) {
+//       return res
+//         .status(400)
+//         .json({ error: "Tutor profile already exists for this user" });
+//     }
+
+//     // Process file uploads if any certificates were submitted
+//     let certificateUrls: string[] = [];
+//     const files = req.files as Express.Multer.File[];
+//     if (files && files.length > 0) {
+//       certificateUrls = await uploadFilesToSupabase(files, userId!);
+//     }
+
+//     // Safely parse JSON strings (FormData transmits arrays as JSON strings)
+//     const parsedLanguages =
+//       typeof languages === "string"
+//         ? JSON.parse(languages)
+//         : languages || ["English"];
+//     const parsedExperience =
+//       typeof experience === "string"
+//         ? JSON.parse(experience)
+//         : experience || [];
+//     const parsedSubjectIds =
+//       typeof subjectIds === "string" ? JSON.parse(subjectIds) : subjectIds;
+
+//     // Create profile in Prisma with the uploaded certificate URLs
+//     const updatedUser = await prisma.user.update({
+//       where: { id: userId },
+//       data: {
+//         // isTutor: true,
+//         tutorProfile: {
+//           create: {
+//             headline,
+//             bio,
+//             hourlyRate: parseFloat(hourlyRate) || 0,
+//             education,
+//             languages: parsedLanguages,
+//             certificates: certificateUrls,
+//             experience: parsedExperience,
+//             verificationStatus: "PENDING",
+//           },
+//         },
+//       },
+//       select: {
+//         id: true,
+//         email: true,
+//         isStudent: true,
+//         isTutor: true,
+//         isAdmin: true,
+//         tutorProfile: true,
+//       },
+//     });
+
+//     // Link taught subjects
+//     if (Array.isArray(parsedSubjectIds) && parsedSubjectIds.length > 0) {
+//       await prisma.tutorSubject.createMany({
+//         data: parsedSubjectIds.map((subjectId: string) => ({
+//           tutorId: userId!,
+//           subjectId,
+//         })),
+//         skipDuplicates: true,
+//       });
+//     }
+
+//     return res.status(201).json({
+//       message: "Tutor application submitted successfully",
+//       user: updatedUser,
+//     });
+//   } catch (error) {
+//     console.error("Apply Tutor Error:", error);
+//     return res.status(500).json({ error: "Failed to create tutor profile" });
+//   }
+// };
+
 // GET /api/tutors/me — the logged-in user's own tutor profile + selected subjects
 export const getMyTutorProfile = async (req: Request, res: Response) => {
   try {
@@ -202,7 +294,9 @@ export const getMyTutorProfile = async (req: Request, res: Response) => {
   }
 };
 
-// PATCH /api/tutors/me — only an APPROVED tutor may edit their own profile
+
+
+
 export const updateMyTutorProfile = async (req: Request, res: Response) => {
   try {
     const userId = getUserId(req);
@@ -226,13 +320,43 @@ export const updateMyTutorProfile = async (req: Request, res: Response) => {
       bio,
       education,
       hourlyRate,
+      meetingUrl,
       subjectIds,
       languages,
       existingCertificates,
       experience,
     } = req.body;
 
-    // 1. Process newly uploaded files via Multer (`req.files`) and pass userId
+    // 1. Process & normalize meeting URL if passed
+    let formattedMeetingUrl: string | null | undefined = undefined;
+
+    if (meetingUrl !== undefined) {
+      if (typeof meetingUrl === "string" && meetingUrl.trim() !== "") {
+        let cleanedUrl = meetingUrl.trim();
+
+        if (!/^https?:\/\//i.test(cleanedUrl)) {
+          cleanedUrl = `https://${cleanedUrl}`;
+        }
+
+        try {
+          const parsed = new URL(cleanedUrl);
+          if (!parsed.hostname.includes(".")) {
+            throw new Error("Invalid domain");
+          }
+          formattedMeetingUrl = parsed.toString();
+        } catch {
+          return res.status(400).json({
+            error:
+              "Please enter a valid meeting link (e.g. meet.google.com/abc-defg-hij)",
+          });
+        }
+      } else {
+        // If empty string or null was sent, reset meetingUrl to null
+        formattedMeetingUrl = null;
+      }
+    }
+
+    // 2. Process newly uploaded files via Multer (`req.files`)
     const files = req.files as Express.Multer.File[] | undefined;
     let newCertificateUrls: string[] = [];
 
@@ -240,33 +364,59 @@ export const updateMyTutorProfile = async (req: Request, res: Response) => {
       newCertificateUrls = await uploadFilesToSupabase(files, userId!);
     }
 
-    // 2. Normalize existing certificates
+    // 3. Normalize existing certificates
     let keptCertificates: string[] = [];
     if (existingCertificates) {
-      keptCertificates = Array.isArray(existingCertificates)
-        ? existingCertificates
-        : [existingCertificates];
+      let parsedCertificates = existingCertificates;
+      if (typeof existingCertificates === "string") {
+        try {
+          parsedCertificates = JSON.parse(existingCertificates);
+        } catch {
+          parsedCertificates = [existingCertificates];
+        }
+      }
+      keptCertificates = Array.isArray(parsedCertificates)
+        ? parsedCertificates
+        : [parsedCertificates];
     }
 
-    // 3. Combine kept existing certificates with newly uploaded ones
+    // 4. Combine kept existing certificates with newly uploaded ones
     const finalCertificates = [...keptCertificates, ...newCertificateUrls];
 
+    // 5. Parse JSON strings safely (handles FormData inputs)
+    const parseIfString = (val: any) => {
+      if (typeof val === "string") {
+        try {
+          return JSON.parse(val);
+        } catch {
+          return val;
+        }
+      }
+      return val;
+    };
+
+    const parsedLanguages = parseIfString(languages);
+    const parsedExperience = parseIfString(experience);
+    const parsedSubjectIds = parseIfString(subjectIds);
+
+    // 6. Build dynamic update object
     const data: Record<string, unknown> = {};
     if (headline !== undefined) data.headline = headline;
     if (bio !== undefined) data.bio = bio;
     if (education !== undefined) data.education = education;
     if (hourlyRate !== undefined) data.hourlyRate = parseFloat(hourlyRate) || 0;
-    if (languages !== undefined) data.languages = languages;
+    if (formattedMeetingUrl !== undefined) data.meetingUrl = formattedMeetingUrl;
+    if (parsedLanguages !== undefined) data.languages = parsedLanguages;
     if (finalCertificates.length > 0) data.certificates = finalCertificates;
-    if (experience !== undefined) data.experience = experience;
+    if (parsedExperience !== undefined) data.experience = parsedExperience;
 
     const [profile] = await prisma.$transaction([
       prisma.tutorProfile.update({ where: { userId }, data }),
-      ...(Array.isArray(subjectIds)
+      ...(Array.isArray(parsedSubjectIds)
         ? [
             prisma.tutorSubject.deleteMany({ where: { tutorId: userId } }),
             prisma.tutorSubject.createMany({
-              data: subjectIds.map((subjectId: string) => ({
+              data: parsedSubjectIds.map((subjectId: string) => ({
                 tutorId: userId!,
                 subjectId,
               })),
@@ -282,6 +432,96 @@ export const updateMyTutorProfile = async (req: Request, res: Response) => {
     return res.status(500).json({ error: "Failed to update tutor profile" });
   }
 };
+
+
+
+
+
+
+
+
+
+
+// PATCH /api/tutors/me — only an APPROVED tutor may edit their own profile
+// export const updateMyTutorProfile = async (req: Request, res: Response) => {
+//   try {
+//     const userId = getUserId(req);
+
+//     const existing = await prisma.tutorProfile.findUnique({
+//       where: { userId },
+//     });
+//     if (!existing) {
+//       return res
+//         .status(404)
+//         .json({ error: "No tutor profile found. Apply as a tutor first." });
+//     }
+//     if (existing.verificationStatus !== "APPROVED") {
+//       return res.status(403).json({
+//         error: "Your profile is not approved yet, so it cannot be edited.",
+//       });
+//     }
+
+//     const {
+//       headline,
+//       bio,
+//       education,
+//       hourlyRate,
+//       subjectIds,
+//       languages,
+//       existingCertificates,
+//       experience,
+//     } = req.body;
+
+//     // 1. Process newly uploaded files via Multer (`req.files`) and pass userId
+//     const files = req.files as Express.Multer.File[] | undefined;
+//     let newCertificateUrls: string[] = [];
+
+//     if (files && files.length > 0) {
+//       newCertificateUrls = await uploadFilesToSupabase(files, userId!);
+//     }
+
+//     // 2. Normalize existing certificates
+//     let keptCertificates: string[] = [];
+//     if (existingCertificates) {
+//       keptCertificates = Array.isArray(existingCertificates)
+//         ? existingCertificates
+//         : [existingCertificates];
+//     }
+
+//     // 3. Combine kept existing certificates with newly uploaded ones
+//     const finalCertificates = [...keptCertificates, ...newCertificateUrls];
+
+//     const data: Record<string, unknown> = {};
+//     if (headline !== undefined) data.headline = headline;
+//     if (bio !== undefined) data.bio = bio;
+//     if (education !== undefined) data.education = education;
+//     if (hourlyRate !== undefined) data.hourlyRate = parseFloat(hourlyRate) || 0;
+//     if (languages !== undefined) data.languages = languages;
+//     if (finalCertificates.length > 0) data.certificates = finalCertificates;
+//     if (experience !== undefined) data.experience = experience;
+
+//     const [profile] = await prisma.$transaction([
+//       prisma.tutorProfile.update({ where: { userId }, data }),
+//       ...(Array.isArray(subjectIds)
+//         ? [
+//             prisma.tutorSubject.deleteMany({ where: { tutorId: userId } }),
+//             prisma.tutorSubject.createMany({
+//               data: subjectIds.map((subjectId: string) => ({
+//                 tutorId: userId!,
+//                 subjectId,
+//               })),
+//               skipDuplicates: true,
+//             }),
+//           ]
+//         : []),
+//     ]);
+
+//     return res.status(200).json({ message: "Tutor profile updated", profile });
+//   } catch (error) {
+//     console.error("Update Tutor Profile Error:", error);
+//     return res.status(500).json({ error: "Failed to update tutor profile" });
+//   }
+// };
 
 // export const updateMyTutorProfile = async (req: Request, res: Response) => {
 //   try {
@@ -463,7 +703,11 @@ export const getTutorById = async (req: Request, res: Response) => {
       },
     });
 
-    if (!tutor || !tutor.tutorProfile || tutor.tutorProfile.verificationStatus !== "APPROVED") {
+    if (
+      !tutor ||
+      !tutor.tutorProfile ||
+      tutor.tutorProfile.verificationStatus !== "APPROVED"
+    ) {
       return res.status(404).json({ error: "NOT_FOUND" });
     }
 

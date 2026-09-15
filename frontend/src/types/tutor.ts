@@ -52,6 +52,7 @@ export interface TutorApplicationInput {
   bio: string;
   education: string;
   hourlyRate: number;
+  meetingUrl: string;
   subjectIds: string[];
   languages: string[];
   certificates: string[];

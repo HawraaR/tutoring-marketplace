@@ -2,10 +2,21 @@ import { api } from "./axios";
 import type { Subject, TutorApplicationInput, TutorProfile } from "../types";
 
 // POST /tutors/apply — submit a new tutor application (once per user)
-export const applyAsTutor = async (
-  data: FormData | TutorApplicationInput,
-): Promise<{ message: string; user: unknown }> => {
-  const response = await api.post("/tutors/apply", data);
+// export const applyAsTutor = async (
+//   data: FormData | TutorApplicationInput,
+// ): Promise<{ message: string; user: unknown }> => {
+//   const response = await api.post("/tutors/apply", data);
+//   return response.data;
+// };
+
+export const applyAsTutor = async (data: FormData) => {
+  const response = await api.post("/tutors/apply", data, {
+    // Prevents Axios from converting FormData to JSON
+    transformRequest: [(data) => data],
+    headers: {
+      "Content-Type": undefined, // Forces browser to set boundary automatically
+    },
+  });
   return response.data;
 };
 

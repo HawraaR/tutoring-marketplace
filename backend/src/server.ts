@@ -20,6 +20,7 @@ import reviewRoute from "./routes/reviewRoutes";
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); 
 
 // Enable CORS for local dev and production frontend
 app.use(
