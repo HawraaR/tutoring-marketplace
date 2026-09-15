@@ -15,13 +15,20 @@ export interface CalendarEvent {
   start: string;
   end: string;
   title: string;
-  tutor: string;
+  tutor?: string;
+    tutorProfile?:{
+      bio:string;
+      experience: string;
+      averageRating: number;
+    }
+
   course: string;
   mode: string;
-  note: string;
+  // note: string;
   tone: EventTone;
   status: EventStatus;
 }
+
 
 // Local Form State (Used within calendar creation forms)
 export interface AvailabilityForm {
@@ -31,7 +38,6 @@ export interface AvailabilityForm {
   start: string;
   end: string;
   mode: string;
-  note: string;
 }
 
 export interface CalendarProps {

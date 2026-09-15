@@ -13,6 +13,11 @@ export interface AvailabilitySlot {
     firstName?: string;
     lastName?: string;
     email?: string;
+    tutorProfile?: {
+      bio:string;
+      experience: string;
+      averageRating: number;
+    }
   };
 }
 
