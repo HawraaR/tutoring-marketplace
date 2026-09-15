@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthProvider";
 import { useAuth } from "./context/AuthContext";
@@ -24,34 +24,10 @@ import TutorProfileDetail from "./pages/TutorProfileDetail";
 import { StudentProfileEdit } from "./pages/StudentProfileEdit";
 import { Settings } from "./pages/Settings";
 import { io } from "socket.io-client";
+import { useDashboard } from "./hooks/useDashboard";
 
 const DashboardRedirect: React.FC = () => {
   const { user, activeRole } = useAuth();
-
-  //socket
-
-  // Get your JWT token from localStorage or your auth state
-  const token = localStorage.getItem("token");
-  console.log("token", token )
-
-  const socket = io("http://localhost:5000", {
-    auth: {
-      token: token,
-    },
-  });
-
-  socket.on("connect", () => {
-    console.log("🟢 Socket connected successfully! Socket ID:", socket.id);
-  });
-
-  socket.on("connect_error", (err) => {
-    console.error("🔴 Socket connection failed:", err.message);
-  });
-
-  socket.on("disconnect", (reason) => {
-    console.warn("⚠️ Socket disconnected:", reason);
-  });
-  //
 
   if (user?.isAdmin) {
     return <AdminD />;
@@ -59,7 +35,32 @@ const DashboardRedirect: React.FC = () => {
   if (activeRole === "tutor" && user?.isTutor) {
     return <TutorD />;
   }
-  return <Dashboard />;
+  return <StudentDashboard />;
+};
+
+const StudentDashboard: React.FC = () => {
+  const { data, loading, error } = useDashboard();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const socket = io("http://localhost:5000", { auth: { token } });
+
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id);
+    });
+    socket.on("connect_error", (err) => {
+      console.error("Socket connection failed:", err.message);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  if (loading) return <p className="p-6 text-muted">Loading dashboard...</p>;
+  if (error) return <p className="p-6 text-red-600">{error}</p>;
+  if (!data) return <p className="p-6 text-muted">Dashboard data is unavailable.</p>;
+  return <Dashboard data={data} />;
 };
 
 export const App: React.FC = () => {
