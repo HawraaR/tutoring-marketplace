@@ -332,6 +332,7 @@ export function CalendarV2() {
       await api.post<AvailabilitySlot>("/availability", payload);
       toast.success("Slot published successfully!");
       setForm((current) => ({ ...current, title: "", note: "" }));
+      toast.success("Availability slot created successfully!");
       await refreshSchedule();
     } catch (err: unknown) {
       if (axios.isAxiosError<{ message?: string; error?: string }>(err)) {
@@ -343,6 +344,7 @@ export function CalendarV2() {
       } else {
         toast.error("Operation failed");
       }
+      toast.error("Failed to create availability slot.");
     }
   };
 
@@ -386,7 +388,7 @@ export function CalendarV2() {
       };
 
       await api.post("/bookings", payload);
-      toast.success("Booking created!");
+      toast.success("Booking confirmed successfully!");
       setSelectedEvent(null);
       setSelectedSubjectId("");
       await refreshSchedule();
@@ -400,6 +402,7 @@ export function CalendarV2() {
       } else {
         toast.error("Operation failed");
       }
+      toast.error("Failed to confirm booking. Please try again.");
     } finally {
       setIsBooking(false);
     }
