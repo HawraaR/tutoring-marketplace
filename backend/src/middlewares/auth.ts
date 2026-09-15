@@ -37,6 +37,7 @@ export const authenticateToken = (
 
     (req as any).user = { ...decoded, userId };
     console.log("👉 2. TOKEN DECODED SUCCESSFULLY:", decoded);
+    console.log("✅ MIDDLEWARE PASSED. Decoded payload:", decoded);
 
     // 5. Proceed to the controller (getMe)
     next();

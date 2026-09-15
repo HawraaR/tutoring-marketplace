@@ -145,3 +145,171 @@ export const getMessageContacts = async (req: Request, res: Response) => {
     return res.status(500).json({ error: "Failed to fetch message contacts." });
   }
 };
+
+export const changePassword = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "Both current and new passwords are required." });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: "New password must be at least 6 characters long." });
+    }
+
+    // 1. Fetch user to verify old password
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    // 2. Validate current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ error: "Incorrect current password." });
+    }
+
+    // 3. Hash and save new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedNewPassword },
+    });
+
+    return res.status(200).json({ message: "Password updated successfully." });
+  } catch (error: any) {
+    console.error("Change Password Error:", error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const getUserById = async (req: Request<{id: string}>, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        isStudent: true,
+        isTutor: true,
+        isAdmin: true,
+        createdAt: true,
+        studentProfile: {
+          select: {
+            id: true,
+            educationLevel: true,
+            major: true,
+            learningGoals: true,
+            preferredLanguage: true,
+            maxHourlyRate: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    return res.status(200).json({ user });
+  } catch (error: any) {
+    console.error("Get User By ID Error:", error);
+    return res.status(500).json({
+      error: "Internal server error",
+      details: error.message,
+    });
+  }
+};
+
+
+export const getMe = async (req: Request, res: Response) => {
+  try {
+
+    console.log("🔍 REQ.USER FROM MIDDLEWARE:", (req as any).user);
+    const userId = (req as any).user?.userId || (req as any).user?.id;;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized access" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        isStudent: true,
+        isTutor: true,
+        isAdmin: true,
+        createdAt: true,
+        studentProfile: true,
+      },
+    });
+
+    if (!user) {
+      console.log("❌ USER NOT FOUND IN DB FOR ID:", userId);
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    return res.status(200).json({ user });
+  } catch (error: any) {
+    console.error("GetMe Error:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// PUT /api/users/me
+export const updateMe = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId || (req as any).user?.id;;
+    const { firstName, lastName, email } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized access" });
+    }
+
+    // Check if email is being updated and if it's already taken by another user
+    if (email) {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          email,
+          NOT: { id: userId },
+        },
+      });
+
+      if (existingUser) {
+        return res.status(400).json({ error: "Email is already in use by another account" });
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(firstName !== undefined && { firstName }),
+        ...(lastName !== undefined && { lastName }),
+        ...(email !== undefined && { email }),
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        isStudent: true,
+        isTutor: true,
+        isAdmin: true,
+      },
+    });
+
+    return res.status(200).json({ user: updatedUser, message: "Profile updated successfully" });
+  } catch (error: any) {
+    console.error("UpdateMe Error:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
