@@ -1,11 +1,5 @@
 
-
-
 import { TutorApplications } from "../components/admin/TutorApplications";
-
-/* =========================================================
-   MOCK DATA
-========================================================= */
 
 const overviewStats = [
   {
