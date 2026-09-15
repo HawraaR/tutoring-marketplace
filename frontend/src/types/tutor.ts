@@ -36,6 +36,7 @@ export interface TutorProfile {
   hourlyRate: number;
   education: string | null;
   languages: string[];
+  meetingUrl: string;
   verificationStatus: TutorStatus;
   rejectionReason: string | null;
   certificates: string[];

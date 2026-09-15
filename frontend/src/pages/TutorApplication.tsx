@@ -69,9 +69,8 @@ export function TutorApplication() {
   const isRejected = existing?.verificationStatus === "REJECTED";
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>(
-    isRejected ? existing?.subjects?.map((s: any) => s.id) || [] : []
-  );
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>([])
+    // isRejected ? existing?.subjects?.map((s: any) => s.id) || [] : []);
   const [headline, setHeadline] = useState(isRejected ? existing?.headline || "" : "");
   const [bio, setBio] = useState(isRejected ? existing?.bio || "" : "");
   const [education, setEducation] = useState(isRejected ? existing?.education || "" : "");
