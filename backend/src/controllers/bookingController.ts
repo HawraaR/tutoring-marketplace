@@ -21,14 +21,22 @@ export const createBooking = async (req: Request, res: Response) => {
       },
     });
 
-    if (!slot || slot.isBooked || (slot.booking && slot.booking.status !== "CANCELLED")) {
-      return res.status(400).json({ error: "This slot is no longer available." });
+    if (
+      !slot ||
+      slot.isBooked ||
+      (slot.booking && slot.booking.status !== "CANCELLED")
+    ) {
+      return res
+        .status(400)
+        .json({ error: "This slot is no longer available." });
     }
     if (new Date(slot.startTime).getTime() <= Date.now()) {
       return res.status(400).json({ error: "This slot is in the past." });
     }
     if (slot.tutorId === studentId) {
-      return res.status(400).json({ error: "You cannot book your own availability." });
+      return res
+        .status(400)
+        .json({ error: "You cannot book your own availability." });
     }
 
     const teachesSubject = await prisma.tutorSubject.findUnique({
@@ -57,7 +65,9 @@ export const createBooking = async (req: Request, res: Response) => {
 
       const rate = slot.tutor.tutorProfile?.hourlyRate || 0;
       const hours =
-        (new Date(slot.endTime).getTime() - new Date(slot.startTime).getTime()) / 3_600_000;
+        (new Date(slot.endTime).getTime() -
+          new Date(slot.startTime).getTime()) /
+        3_600_000;
 
       return tx.booking.create({
         data: {
@@ -76,8 +86,8 @@ export const createBooking = async (req: Request, res: Response) => {
 
     return res.status(201).json({
       message: "Booking requested successfully",
-      data: booking,   // ApiResponse shape used by the frontend client
-      booking,         // kept for backward compatibility
+      data: booking, // ApiResponse shape used by the frontend client
+      booking, // kept for backward compatibility
     });
   } catch (error: any) {
     if (error?.message === "SLOT_TAKEN") {
@@ -85,7 +95,10 @@ export const createBooking = async (req: Request, res: Response) => {
         .status(409)
         .json({ error: "This slot was just booked by someone else." });
     }
-    if (error?.code === "P2002" && error?.meta?.target?.includes("availabilitySlotId")) {
+    if (
+      error?.code === "P2002" &&
+      error?.meta?.target?.includes("availabilitySlotId")
+    ) {
       return res
         .status(409)
         .json({ error: "This slot is no longer available." });
@@ -112,7 +125,13 @@ export const getUserBookings = async (req: Request, res: Response) => {
           select: { id: true, firstName: true, lastName: true, email: true },
         },
         tutor: {
-          select: { id: true, firstName: true, lastName: true, email: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            tutorProfile: true,
+          },
         },
         subject: true,
         review: true,
@@ -152,7 +171,6 @@ export const getTutorBookings = async (req: Request, res: Response) => {
   }
 };
 
-
 // Update Booking Status (Confirm / Cancel / Complete)
 export const updateBookingStatus = async (
   req: Request<{ bookingId: string }>,
@@ -179,11 +197,17 @@ export const updateBookingStatus = async (
           where: { id: bookingId },
           data: { status: "CANCELLED", availabilitySlotId: null },
         }),
-        prisma.availabilitySlot.update({ where: { id: booking.availabilitySlotId }, data: { isBooked: false } }),
+        prisma.availabilitySlot.update({
+          where: { id: booking.availabilitySlotId },
+          data: { isBooked: false },
+        }),
       ]);
     } else {
-      updated = await prisma.booking.update({ where: { id: bookingId }, data: { status } });
-    } 
+      updated = await prisma.booking.update({
+        where: { id: bookingId },
+        data: { status },
+      });
+    }
     return res
       .status(200)
       .json({ message: `Booking status updated to ${status}` });

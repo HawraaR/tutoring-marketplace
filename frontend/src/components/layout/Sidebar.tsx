@@ -105,7 +105,7 @@ export function Sidebar({
         : studentNavItems
     ).filter((item) => {
       if (item.to === "/become-a-tutor") return !hasAppliedAsTutor;
-      if (item.to === "/tutor-profile") return hasAppliedAsTutor;
+      // if (item.to === "/tutor-profile") return hasAppliedAsTutor;
       return true;
     }),
     settingsNavItem,

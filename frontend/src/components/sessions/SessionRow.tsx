@@ -1,4 +1,10 @@
-import { CheckCircle2, Clock3, MessageCircle, MoreHorizontal, Video } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock3,
+  MessageCircle,
+
+  Video,
+} from "lucide-react";
 import { CourseLabel } from "../../components/dashboard/CourseLabel";
 import { STATUS_STYLES } from "../../lib/utils/sessionHelpers";
 // import { useState } from "react";
@@ -7,15 +13,20 @@ import type { UnifiedSession } from "../../types";
 import { SessionReviewEntry } from "./sessionReviewEntry";
 import { isSessionPast } from "../review/reviewCriteria";
 
-
 interface SessionRowProps {
   session: UnifiedSession;
   isTutorMode: boolean;
   onAction: (
     id: string,
-    action: "join" | "message" | "reschedule" | "cancel" | "details" | "rate and review",
+    action:
+      | "join"
+      | "message"
+      | "reschedule"
+      | "cancel"
+      | "details"
+      | "rate and review",
   ) => void;
-  onReviewSubmitted?: () => void; 
+  onReviewSubmitted?: () => void;
 }
 
 export function SessionRow({
@@ -27,15 +38,17 @@ export function SessionRow({
   const dayNumber = new Date(session.sortDate).getDate();
 
   return (
-      <>
-        <article className="border-b border-border-subtle px-4 py-4 last:border-0 md:px-5">
+    <>
+      <article className="border-b border-border-subtle px-4 py-4 last:border-0 md:px-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
           <div className="flex items-center gap-3 lg:w-44 lg:shrink-0">
             <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-sm bg-brand-primary text-white">
               <span className="text-[10px] font-medium uppercase">
                 {session.day}
               </span>
-              <span className="font-serif text-lg leading-none">{dayNumber}</span>
+              <span className="font-serif text-lg leading-none">
+                {dayNumber}
+              </span>
             </div>
             <div className="lg:hidden">
               <p className="text-sm font-medium text-ink">{session.date}</p>
@@ -78,7 +91,63 @@ export function SessionRow({
             )}
           </div>
 
-          <div className="flex items-center justify-between gap-2 border-t border-border-subtle pt-3 lg:w-52 lg:shrink-0 lg:justify-end lg:border-0 lg:pt-0">
+          <div className="flex flex-col gap-2 border-t border-border-subtle pt-3 lg:w-52 lg:shrink-0 lg:border-0 lg:pt-0">
+            {session.status === "upcoming" ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onAction(session.id, "join")}
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-sm bg-brand-primary px-3 py-2 text-xs font-medium text-white hover:bg-brand-primary-hover"
+                >
+                  <Video className="h-3.5 w-3.5" />
+                  Join Session
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onAction(session.id, "cancel")}
+                  className="inline-flex w-full items-center justify-center rounded-sm bg-error px-3 py-2 text-xs font-medium text-white hover:opacity-90"
+                >
+                  Cancel Session
+                </button>
+              </>
+            ) : session.status === "past" ? (
+              <div className="flex flex-col gap-2 w-full">
+                {!isTutorMode &&
+                  session.bookingStatus !== "CANCELLED" &&
+                  isSessionPast(session.endTime) &&
+                  !session.review && (
+                    <SessionReviewEntry
+                      session={session}
+                      onReviewed={onReviewSubmitted}
+                    />
+                  )}
+                {!isTutorMode && session.review && (
+                  <span className="inline-flex w-full items-center justify-center gap-1.5 py-2 text-xs font-medium text-olive">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Reviewed
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onAction(session.id, "message")}
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-sm border border-border-subtle px-3 py-2 text-xs font-medium text-brand-primary hover:bg-surface-bg"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  Message {session.counterpartRole.toLowerCase()}
+                </button>
+              </div>
+            ) : (
+              <span className="text-xs text-error">Session cancelled</span>
+            )}
+          </div>
+        </div>
+      </article>
+    </>
+  );
+}
+
+{
+  /* <div className="flex items-center justify-between gap-2 border-t border-border-subtle pt-3 lg:w-52 lg:shrink-0 lg:justify-end lg:border-0 lg:pt-0">
             {session.status === "upcoming" ? (
               <>
                 <button
@@ -142,11 +211,5 @@ export function SessionRow({
             ) : (
               <span className="text-xs text-error">Session cancelled</span>
             )}
-          </div>
-        </div>
-      </article>
-      
-    </>
-    
-  );
+          </div> */
 }
