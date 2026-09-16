@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Mail,
   ChevronRight,
+  ExternalLink,
   BookOpen,
   GraduationCap,
   Clock3,
@@ -491,7 +492,7 @@ export const PrivacyPolicy: React.FC = () => {
             </article>
 
             {/* Section 11 */}
-            {/* <article id="contact" className="scroll-mt-24 space-y-4 border-t border-border-subtle pt-8">
+            <article id="contact" className="scroll-mt-24 space-y-4 border-t border-border-subtle pt-8">
               <div className="flex items-center gap-2.5 text-brand-primary">
                 <Mail className="w-5 h-5 text-slate-blue" />
                 <h2 className="text-xl font-bold font-serif">11. Contact & Support</h2>
@@ -509,7 +510,7 @@ export const PrivacyPolicy: React.FC = () => {
                   <span><strong>Response Time:</strong> Our administrative compliance team responds to all data requests within 48 business hours.</span>
                 </div>
               </div>
-            </article> */}
+            </article>
 
             {/* Back to top button */}
             <div className="pt-6 border-t border-border-subtle flex justify-between items-center text-xs text-muted">

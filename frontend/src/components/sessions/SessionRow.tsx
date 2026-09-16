@@ -94,6 +94,7 @@ export function SessionRow({
           <div className="flex flex-col gap-2 border-t border-border-subtle pt-3 lg:w-52 lg:shrink-0 lg:border-0 lg:pt-0">
             {session.status === "upcoming" ? (
               <>
+              <a href={session.meetingUrl ?? "#"} target="_blank" rel="noopener noreferrer">
                 <button
                   type="button"
                   onClick={() => onAction(session.id, "join")}
@@ -102,6 +103,8 @@ export function SessionRow({
                   <Video className="h-3.5 w-3.5" />
                   Join Session
                 </button>
+              </a>
+                
 
                 <button
                   type="button"
