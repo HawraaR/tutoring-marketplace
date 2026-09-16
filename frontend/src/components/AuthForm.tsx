@@ -187,7 +187,7 @@ export const AuthForm: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex items-center gap-2 py-1">
+                {/* <div className="flex items-center gap-2 py-1">
                   <input
                     id="isTutor"
                     type="checkbox"
@@ -198,7 +198,7 @@ export const AuthForm: React.FC = () => {
                   <label htmlFor="isTutor" className="text-sm font-medium text-ink">
                     I want to register as a Tutor
                   </label>
-                </div>
+                </div> */}
               </>
             )}
 
