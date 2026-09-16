@@ -62,6 +62,7 @@ export function Footer() {
               <li><Link to="#" className="hover:text-primary transition-colors">Payment Security</Link></li>
               <li><Link to="#" className="hover:text-primary transition-colors">Contact Us</Link></li>
               <li><Link to="#" className="hover:text-primary transition-colors">Terms of Service</Link></li>
+              <li><Link to="#" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
               <li><Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
             </ul>
           </div>
@@ -95,6 +96,7 @@ export function Footer() {
           <p>© 2024 AcademiConnect Lebanon. All rights reserved.</p>
           <div className="mt-2 flex justify-center gap-4">
             <Link to="#" className="hover:text-primary">Terms</Link>
+            <Link to="#" className="hover:text-primary">Privacy</Link>
             <Link to="/privacy" className="hover:text-primary">Privacy</Link>
             <Link to="#" className="hover:text-primary">Cookies</Link>
           </div>
