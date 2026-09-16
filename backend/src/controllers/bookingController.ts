@@ -154,10 +154,21 @@ export const getTutorBookings = async (req: Request, res: Response) => {
       where: { tutorId },
       include: {
         student: {
-          select: { id: true, firstName: true, lastName: true, email: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
         },
         tutor: {
-          select: { id: true, firstName: true, lastName: true, email: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            tutorProfile: true,
+          },
         },
         subject: true,
         review: true,
