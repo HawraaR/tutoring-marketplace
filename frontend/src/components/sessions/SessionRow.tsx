@@ -36,6 +36,7 @@ export function SessionRow({
   onReviewSubmitted,
 }: SessionRowProps) {
   const dayNumber = new Date(session.sortDate).getDate();
+  console.log('sessions is ', session)
 
   return (
     <>
@@ -94,7 +95,7 @@ export function SessionRow({
           <div className="flex flex-col gap-2 border-t border-border-subtle pt-3 lg:w-52 lg:shrink-0 lg:border-0 lg:pt-0">
             {session.status === "upcoming" ? (
               <>
-              <a href={session.meetingUrl ?? "#"} target="_blank" rel="noopener noreferrer">
+              <a href={session.meetingUrl} target="_blank" rel="noopener noreferrer">
                 <button
                   type="button"
                   onClick={() => onAction(session.id, "join")}
